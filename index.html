@@ -393,6 +393,56 @@
     .legal-content h1 { font-size:1.7rem; }
   }
 
+  /* ═══ ADMIN PANEL ═══ */
+  .admin-login { max-width:380px; margin:80px auto; padding:40px 32px; background:var(--surface); border:1px solid var(--border); border-radius:20px; text-align:center; }
+  .admin-login h2 { font-size:1.4rem; margin-bottom:6px; }
+  .admin-login .admin-sub { font-size:0.8rem; color:var(--text-dim); margin-bottom:24px; }
+  .admin-input { width:100%; padding:12px 16px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:'Outfit',sans-serif; font-size:0.9rem; margin-bottom:12px; outline:none; }
+  .admin-input:focus { border-color:var(--accent); }
+  .admin-login-btn { width:100%; padding:12px; background:var(--accent); border:none; border-radius:10px; color:#fff; font-family:'Outfit',sans-serif; font-weight:700; font-size:0.95rem; cursor:pointer; transition:background 0.2s; }
+  .admin-login-btn:hover { background:#5b4bd5; }
+  .admin-error { color:var(--red); font-size:0.8rem; margin-top:8px; display:none; }
+  .admin-dash { max-width:1000px; margin:0 auto; padding:20px; }
+  .admin-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; }
+  .admin-header h1 { font-size:1.4rem; font-weight:800; }
+  .admin-logout { background:none; border:1px solid var(--border); color:var(--text-dim); padding:8px 16px; border-radius:8px; font-family:'Outfit',sans-serif; font-size:0.8rem; cursor:pointer; }
+  .admin-logout:hover { border-color:var(--red); color:var(--red); }
+  .stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:28px; }
+  .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px 16px; text-align:center; }
+  .stat-num { font-size:1.8rem; font-weight:800; color:var(--accent-glow); }
+  .stat-label { font-size:0.75rem; color:var(--text-dim); margin-top:4px; text-transform:uppercase; letter-spacing:0.5px; }
+  .stat-card.green .stat-num { color:var(--green); }
+  .stat-card.red .stat-num { color:var(--red); }
+  .admin-section { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; margin-bottom:20px; }
+  .admin-section h3 { font-size:1rem; font-weight:700; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+  .admin-table { width:100%; border-collapse:collapse; font-size:0.8rem; }
+  .admin-table th { text-align:left; color:var(--text-dim); font-weight:600; padding:8px 10px; border-bottom:1px solid var(--border); font-size:0.7rem; text-transform:uppercase; letter-spacing:0.5px; }
+  .admin-table td { padding:8px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  .admin-table tr:last-child td { border-bottom:none; }
+  .admin-table .ip { font-family:monospace; font-size:0.75rem; color:var(--accent-glow); }
+  .admin-action-btn { padding:4px 12px; border-radius:6px; border:none; font-family:'Outfit',sans-serif; font-size:0.7rem; font-weight:600; cursor:pointer; }
+  .admin-action-btn.ban { background:var(--red); color:#fff; }
+  .admin-action-btn.unban { background:var(--green); color:#000; }
+  .admin-action-btn.kick { background:var(--surface-3); color:var(--text); }
+  .admin-action-row { display:flex; gap:8px; margin-bottom:12px; }
+  .admin-action-row input { flex:1; padding:10px 14px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:'Outfit',sans-serif; font-size:0.85rem; outline:none; }
+  .admin-action-row input:focus { border-color:var(--accent); }
+  .admin-action-row button { padding:10px 20px; border-radius:8px; border:none; font-family:'Outfit',sans-serif; font-weight:700; font-size:0.85rem; cursor:pointer; white-space:nowrap; }
+  .admin-refresh { background:none; border:1px solid var(--border); color:var(--text-dim); padding:6px 14px; border-radius:8px; font-family:'Outfit',sans-serif; font-size:0.75rem; cursor:pointer; }
+  .admin-refresh:hover { border-color:var(--accent); color:var(--accent); }
+  .admin-badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:0.65rem; font-weight:700; text-transform:uppercase; }
+  .admin-badge.active { background:rgba(232,67,147,0.15); color:var(--red); }
+  .admin-badge.paid { background:rgba(0,230,118,0.15); color:var(--green); }
+  .admin-badge.online { background:rgba(0,230,118,0.15); color:var(--green); }
+  .admin-badge.paired { background:rgba(108,92,231,0.15); color:var(--accent-glow); }
+  .empty-msg { text-align:center; color:var(--text-dim); padding:20px; font-size:0.85rem; }
+  @media(max-width:768px){
+    .admin-dash { padding:12px; }
+    .stat-grid { grid-template-columns:repeat(2,1fr); }
+    .admin-action-row { flex-direction:column; }
+    .admin-table { font-size:0.7rem; }
+  }
+
   /* ═══ BAN SCREEN ═══ */
   .ban-overlay {
     position:fixed; inset:0; background:rgba(0,0,0,0.85);
@@ -675,6 +725,74 @@
 
     <h2>10. Contact</h2>
     <p>If you have questions or concerns about this Privacy Policy or your data, please contact us through the platform.</p>
+  </div>
+</div>
+
+<!-- ════════════ ADMIN PANEL ════════════ -->
+<div class="page" id="pageAdmin">
+  <nav>
+    <div class="logo" onclick="showPage('pageLanding')" style="cursor:pointer"><div class="logo-icon">💬</div>MingleNow</div>
+    <span style="color:var(--red);font-weight:700;font-size:0.85rem">🔒 ADMIN PANEL</span>
+  </nav>
+
+  <!-- Login Screen -->
+  <div class="admin-login" id="adminLogin">
+    <h2>🔐 Admin Login</h2>
+    <p class="admin-sub">Authorized personnel only</p>
+    <input class="admin-input" type="text" id="adminUser" placeholder="Username" autocomplete="off">
+    <input class="admin-input" type="password" id="adminPass" placeholder="Password" autocomplete="off">
+    <button class="admin-login-btn" onclick="adminDoLogin()">Login</button>
+    <div class="admin-error" id="adminError">Invalid username or password</div>
+  </div>
+
+  <!-- Dashboard (hidden until login) -->
+  <div class="admin-dash" id="adminDash" style="display:none">
+    <div class="admin-header">
+      <h1>📊 Dashboard</h1>
+      <div style="display:flex;gap:8px">
+        <button class="admin-refresh" onclick="adminLoadStats()">🔄 Refresh</button>
+        <button class="admin-logout" onclick="adminLogout()">Logout</button>
+      </div>
+    </div>
+
+    <div class="stat-grid" id="adminStats">
+      <div class="stat-card green"><div class="stat-num" id="aOnline">-</div><div class="stat-label">Online Now</div></div>
+      <div class="stat-card"><div class="stat-num" id="aWaiting">-</div><div class="stat-label">In Queue</div></div>
+      <div class="stat-card"><div class="stat-num" id="aConnected">-</div><div class="stat-label">Chatting</div></div>
+      <div class="stat-card red"><div class="stat-num" id="aBanned">-</div><div class="stat-label">Banned</div></div>
+      <div class="stat-card"><div class="stat-num" id="aUnbans">-</div><div class="stat-label">Paid Unbans</div></div>
+      <div class="stat-card green"><div class="stat-num" id="aRevenue">-</div><div class="stat-label">Revenue</div></div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="admin-section">
+      <h3>⚡ Quick Actions</h3>
+      <div class="admin-action-row">
+        <input type="text" id="banIPInput" placeholder="Enter IP address to ban">
+        <input type="text" id="banReasonInput" placeholder="Reason (optional)">
+        <button style="background:var(--red);color:#fff" onclick="adminBanIP()">🚫 Ban IP</button>
+      </div>
+      <div class="admin-action-row">
+        <input type="text" id="unbanIPInput" placeholder="Enter IP address to unban">
+        <button style="background:var(--green);color:#000" onclick="adminUnbanIP()">✅ Unban IP</button>
+      </div>
+      <div class="admin-action-row">
+        <input type="text" id="broadcastInput" placeholder="Type a broadcast message for all users...">
+        <button style="background:var(--accent);color:#fff" onclick="adminBroadcast()">📢 Broadcast</button>
+      </div>
+    </div>
+
+    <!-- Online Users -->
+    <div class="admin-section">
+      <h3>👥 Online Users <button class="admin-refresh" onclick="adminLoadStats()" style="margin-left:auto">Refresh</button></h3>
+      <div id="adminUsersTable"><div class="empty-msg">Loading...</div></div>
+    </div>
+
+    <!-- Ban Log -->
+    <div class="admin-section">
+      <h3>🚫 Ban History</h3>
+      <div id="adminBansTable"><div class="empty-msg">Loading...</div></div>
+    </div>
   </div>
 </div>
 
@@ -1243,6 +1361,191 @@ function notifyMobileChat() {
 })();
 
 // ══════════════════════════════════════════
+// ADMIN PANEL
+// ══════════════════════════════════════════
+let adminToken = null;
+
+async function adminDoLogin() {
+  const user = document.getElementById('adminUser').value.trim();
+  const pass = document.getElementById('adminPass').value;
+  const errEl = document.getElementById('adminError');
+  errEl.style.display = 'none';
+
+  try {
+    const res = await fetch(`${SERVER_HTTP}/admin/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user, password: pass }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      adminToken = data.token;
+      sessionStorage.setItem('adminToken', adminToken);
+      document.getElementById('adminLogin').style.display = 'none';
+      document.getElementById('adminDash').style.display = 'block';
+      adminLoadStats();
+      // Auto-refresh every 10 seconds
+      if (!window._adminInterval) {
+        window._adminInterval = setInterval(() => {
+          if (document.getElementById('pageAdmin').classList.contains('active') && adminToken) {
+            adminLoadStats();
+          }
+        }, 10000);
+      }
+    } else {
+      errEl.style.display = 'block';
+    }
+  } catch (e) {
+    errEl.textContent = 'Could not connect to server';
+    errEl.style.display = 'block';
+  }
+}
+
+function adminLogout() {
+  adminToken = null;
+  sessionStorage.removeItem('adminToken');
+  document.getElementById('adminLogin').style.display = 'block';
+  document.getElementById('adminDash').style.display = 'none';
+  document.getElementById('adminUser').value = '';
+  document.getElementById('adminPass').value = '';
+}
+
+async function adminFetch(endpoint, method = 'GET', body = null) {
+  const opts = { method, headers: { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(`${SERVER_HTTP}${endpoint}`, opts);
+  if (res.status === 401) { adminLogout(); return null; }
+  return res.json();
+}
+
+async function adminLoadStats() {
+  const stats = await adminFetch('/admin/stats');
+  if (!stats) return;
+
+  document.getElementById('aOnline').textContent = stats.online;
+  document.getElementById('aWaiting').textContent = stats.waiting;
+  document.getElementById('aConnected').textContent = stats.connected;
+  document.getElementById('aBanned').textContent = stats.totalBans;
+  document.getElementById('aUnbans').textContent = stats.totalUnbans;
+  document.getElementById('aRevenue').textContent = `$${stats.revenue.toFixed(2)}`;
+
+  // Online users table
+  const usersDiv = document.getElementById('adminUsersTable');
+  if (stats.onlineUsers.length === 0) {
+    usersDiv.innerHTML = '<div class="empty-msg">No users online</div>';
+  } else {
+    usersDiv.innerHTML = `<table class="admin-table">
+      <tr><th>ID</th><th>IP</th><th>Interests</th><th>Status</th><th>Actions</th></tr>
+      ${stats.onlineUsers.map(u => `<tr>
+        <td>${u.id}</td>
+        <td class="ip">${u.ip}</td>
+        <td>${u.interests.join(', ') || '-'}</td>
+        <td>${u.hasParter ? '<span class="admin-badge paired">Chatting</span>' : '<span class="admin-badge online">Waiting</span>'}</td>
+        <td>
+          <button class="admin-action-btn kick" onclick="adminKick('${u.id}')">Kick</button>
+        </td>
+      </tr>`).join('')}
+    </table>`;
+  }
+
+  // Bans table
+  const bansData = await adminFetch('/admin/bans');
+  const bansDiv = document.getElementById('adminBansTable');
+  if (!bansData || bansData.bans.length === 0) {
+    bansDiv.innerHTML = '<div class="empty-msg">No bans yet</div>';
+  } else {
+    bansDiv.innerHTML = `<table class="admin-table">
+      <tr><th>IP</th><th>Reason</th><th>Date</th><th>Status</th><th>Actions</th></tr>
+      ${bansData.bans.map(b => `<tr>
+        <td class="ip">${b.ip}</td>
+        <td>${b.reason}</td>
+        <td>${new Date(b.timestamp).toLocaleDateString()}</td>
+        <td>${b.paid ? '<span class="admin-badge paid">Unbanned</span>' : '<span class="admin-badge active">Banned</span>'}</td>
+        <td>${!b.paid ? `<button class="admin-action-btn unban" onclick="adminUnbanDirect('${b.fullIP}')">Unban</button>` : '-'}</td>
+      </tr>`).join('')}
+    </table>`;
+  }
+}
+
+async function adminBanIP() {
+  const ip = document.getElementById('banIPInput').value.trim();
+  const reason = document.getElementById('banReasonInput').value.trim();
+  if (!ip) return alert('Enter an IP address');
+  await adminFetch('/admin/ban', 'POST', { ip, reason: reason || 'Banned by admin' });
+  document.getElementById('banIPInput').value = '';
+  document.getElementById('banReasonInput').value = '';
+  adminLoadStats();
+}
+
+async function adminUnbanIP() {
+  const ip = document.getElementById('unbanIPInput').value.trim();
+  if (!ip) return alert('Enter an IP address');
+  await adminFetch('/admin/unban', 'POST', { ip });
+  document.getElementById('unbanIPInput').value = '';
+  adminLoadStats();
+}
+
+async function adminUnbanDirect(ip) {
+  if (confirm('Unban this IP?')) {
+    await adminFetch('/admin/unban', 'POST', { ip });
+    adminLoadStats();
+  }
+}
+
+async function adminKick(userId) {
+  if (confirm('Kick this user?')) {
+    await adminFetch('/admin/kick', 'POST', { userId });
+    adminLoadStats();
+  }
+}
+
+async function adminBroadcast() {
+  const msg = document.getElementById('broadcastInput').value.trim();
+  if (!msg) return alert('Enter a message');
+  const res = await adminFetch('/admin/broadcast', 'POST', { message: msg });
+  if (res?.success) {
+    alert(`Broadcast sent to ${res.sent} users`);
+    document.getElementById('broadcastInput').value = '';
+  }
+}
+
+// Check for #admin in URL
+function checkAdminRoute() {
+  if (window.location.hash === '#admin') {
+    showPage('pageAdmin');
+    // Restore session
+    const saved = sessionStorage.getItem('adminToken');
+    if (saved) {
+      adminToken = saved;
+      // Verify token is still valid
+      fetch(`${SERVER_HTTP}/admin/verify`, { headers: { 'Authorization': `Bearer ${adminToken}` } })
+        .then(r => r.json())
+        .then(d => {
+          if (d.valid) {
+            document.getElementById('adminLogin').style.display = 'none';
+            document.getElementById('adminDash').style.display = 'block';
+            adminLoadStats();
+            if (!window._adminInterval) {
+              window._adminInterval = setInterval(() => {
+                if (document.getElementById('pageAdmin').classList.contains('active') && adminToken) adminLoadStats();
+              }, 10000);
+            }
+          } else {
+            adminLogout();
+          }
+        }).catch(() => {});
+    }
+  }
+}
+
+window.addEventListener('hashchange', checkAdminRoute);
+
+// Allow pressing Enter on login fields
+document.getElementById('adminPass')?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') adminDoLogin();
+});
+
+// ══════════════════════════════════════════
 // CLEANUP
 // ══════════════════════════════════════════
 function cleanup() {
@@ -1355,6 +1658,8 @@ function showWarningToast(message) {
     console.log('Could not check ban status');
   }
 })();
+// Check for admin route on load
+checkAdminRoute();
 </script>
 </body>
 </html>

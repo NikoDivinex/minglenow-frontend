@@ -9,6 +9,7 @@
 <meta property="og:description" content="Random video & text chat with interest matching. Meet people worldwide.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://www.paypal.com/sdk/js?client-id=AcPcM3sB90xJ0O0XPfJWkEfLYUVhHa4lrl-Oknk82gEdF5_X7Xw5scK0bl-Msh6F-JCKSm-TZ0gjSkYW&currency=USD&disable-funding=credit,card" data-sdk-integration-source="button-factory"></script>
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -628,13 +629,13 @@
     <p>We reserve the right to ban, suspend, or restrict any user's access at our sole discretion, with or without notice, for any reason including but not limited to violations of our Community Rules. Banned users may request an unban by paying a $7.99 fee. We reserve the right to deny unban requests for severe or repeated violations. Ban decisions are final.</p>
 
     <h2>7. Unban Payments</h2>
-    <p>Unban payments of $7.99 are non-refundable. Payment does not guarantee future access — if you are banned again after being unbanned, your access may be permanently revoked without the option to pay again. Payments are processed through Stripe and are subject to Stripe's terms and conditions.</p>
+    <p>Unban payments of $7.99 are non-refundable. Payment does not guarantee future access — if you are banned again after being unbanned, your access may be permanently revoked without the option to pay again. Payments are processed through PayPal and are subject to PayPal's terms and conditions.</p>
 
     <h2>8. Intellectual Property</h2>
     <p>The MingleNow name, logo, design, and code are our property. You may not copy, reproduce, or distribute any part of the Service without our written permission.</p>
 
     <h2>9. Third-Party Services</h2>
-    <p>MingleNow uses third-party services including WebRTC (for video/audio), Stripe (for payments), and web hosting providers. We are not responsible for the availability or conduct of third-party services.</p>
+    <p>MingleNow uses third-party services including WebRTC (for video/audio), PayPal (for payments), and web hosting providers. We are not responsible for the availability or conduct of third-party services.</p>
 
     <h2>10. Disclaimer of Warranties</h2>
     <p>THE SERVICE IS PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. WE DO NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED, SECURE, OR ERROR-FREE.</p>
@@ -690,11 +691,11 @@
     • <strong>Moderation</strong> — To detect and prevent hate speech, harassment, and other rule violations through automated text filtering.<br>
     • <strong>Ban enforcement</strong> — To prevent banned users from reconnecting using their IP address.<br>
     • <strong>Service improvement</strong> — Aggregated, anonymous usage statistics to improve performance and features.<br>
-    • <strong>Payment processing</strong> — If you make an unban payment, Stripe processes your payment information. We do not see or store your card details.</p>
+    • <strong>Payment processing</strong> — If you make an unban payment, PayPal processes your payment information. We do not see or store your card details.</p>
 
     <h2>3. Data Sharing</h2>
     <p>We do not sell, rent, or trade your personal information to third parties. We may share data only in the following cases:</p>
-    <p>• <strong>Stripe</strong> — Payment information for unban transactions is processed by Stripe under their privacy policy.<br>
+    <p>• <strong>PayPal</strong> — Payment information for unban transactions is processed by PayPal under their privacy policy.<br>
     • <strong>Law enforcement</strong> — We may disclose information if required by law, or if we believe in good faith that disclosure is necessary to protect safety, prevent illegal activity, or respond to a legal request.<br>
     • <strong>Abuse prevention</strong> — IP-based ban data may be shared with other platforms to combat serious abuse (e.g., child exploitation).</p>
 
@@ -702,7 +703,7 @@
     <p>• <strong>Chat messages</strong> — Not stored after the session ends.<br>
     • <strong>IP addresses</strong> — Stored only for banned users, partially masked, for the duration of the ban.<br>
     • <strong>Report logs</strong> — Retained for up to 12 months for moderation review.<br>
-    • <strong>Payment records</strong> — Retained as required by law and Stripe's policies.</p>
+    • <strong>Payment records</strong> — Retained as required by law and PayPal's policies.</p>
 
     <h2>5. Video and Audio Privacy</h2>
     <p>MingleNow uses WebRTC technology, which establishes a direct peer-to-peer connection between users. This means your video and audio streams travel directly between you and the other person — they do not pass through our servers and we have no ability to see, record, or access them. However, be aware that the other user could potentially record their screen. Do not share anything on camera that you would not want recorded.</p>
@@ -715,7 +716,7 @@
     • If you are in a jurisdiction with data protection laws (e.g., GDPR, CCPA), you may have additional rights regarding your data. Contact us to exercise these rights.</p>
 
     <h2>7. Security</h2>
-    <p>We take reasonable measures to protect information from unauthorized access, including encrypted connections (HTTPS/WSS), peer-to-peer video encryption (DTLS-SRTP via WebRTC), and secure payment processing via Stripe. However, no system is perfectly secure, and we cannot guarantee absolute security.</p>
+    <p>We take reasonable measures to protect information from unauthorized access, including encrypted connections (HTTPS/WSS), peer-to-peer video encryption (DTLS-SRTP via WebRTC), and secure payment processing via PayPal. However, no system is perfectly secure, and we cannot guarantee absolute security.</p>
 
     <h2>8. Children's Privacy</h2>
     <p>MingleNow is not intended for anyone under 18 years of age. We do not knowingly collect information from minors. If you believe a minor is using the Service, please report them immediately using the in-chat report tool.</p>
@@ -872,10 +873,10 @@
       Your access to MingleNow has been suspended for violating our community rules.
       This includes hate speech, nudity, harassment, or other prohibited behavior.
     </div>
-    <button class="unban-btn" onclick="requestUnban()">
-      🔓 Get Unbanned — $7.99
-    </button>
+    <p style="font-size:0.95rem;font-weight:700;margin-bottom:12px;color:var(--text)">Get Unbanned — $7.99</p>
+    <div id="paypal-button-container" style="min-height:50px"></div>
     <div class="unban-price">One-time payment to restore your access</div>
+    <div id="paypalStatus" style="font-size:0.8rem;margin-top:10px;color:var(--text-dim)"></div>
   </div>
 </div>
 
@@ -1581,41 +1582,75 @@ function showBanScreen(reason) {
   document.getElementById('banReason').textContent = reason || 'Violation of community guidelines';
   document.getElementById('banOverlay').classList.add('active');
   showPage('pageLanding');
+
+  // Render PayPal buttons
+  const container = document.getElementById('paypal-button-container');
+  container.innerHTML = ''; // Clear any existing buttons
+
+  if (typeof paypal !== 'undefined') {
+    paypal.Buttons({
+      style: {
+        layout: 'vertical',
+        color: 'blue',
+        shape: 'rect',
+        label: 'pay',
+        height: 40,
+      },
+
+      // Create order on server
+      createOrder: function() {
+        document.getElementById('paypalStatus').textContent = 'Creating order...';
+        return fetch(`${SERVER_HTTP}/create-unban-order`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        })
+        .then(r => r.json())
+        .then(data => {
+          if (data.error) {
+            document.getElementById('paypalStatus').textContent = data.message || data.error;
+            throw new Error(data.error);
+          }
+          document.getElementById('paypalStatus').textContent = '';
+          return data.orderId;
+        });
+      },
+
+      // Capture payment after approval
+      onApprove: function(data) {
+        document.getElementById('paypalStatus').textContent = 'Processing payment...';
+        return fetch(`${SERVER_HTTP}/capture-unban-order`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: data.orderID }),
+        })
+        .then(r => r.json())
+        .then(result => {
+          if (result.success) {
+            document.getElementById('paypalStatus').innerHTML =
+              '<span style="color:var(--green)">✅ Payment successful! You are now unbanned. Refreshing...</span>';
+            setTimeout(() => window.location.reload(), 2000);
+          } else {
+            document.getElementById('paypalStatus').textContent = 'Payment could not be completed. Please try again.';
+          }
+        });
+      },
+
+      onCancel: function() {
+        document.getElementById('paypalStatus').textContent = 'Payment cancelled.';
+      },
+
+      onError: function(err) {
+        console.error('PayPal error:', err);
+        document.getElementById('paypalStatus').textContent = 'Payment error. Please try again.';
+      },
+    }).render('#paypal-button-container');
+  } else {
+    container.innerHTML = '<p style="color:var(--red);font-size:0.85rem">PayPal could not load. Please refresh the page.</p>';
+  }
 }
 
 function hideBanScreen() {
   document.getElementById('banOverlay').classList.remove('active');
-}
-
-async function requestUnban() {
-  const btn = document.querySelector('.unban-btn');
-  btn.textContent = '⏳ Processing...';
-  btn.disabled = true;
-
-  try {
-    const res = await fetch(`${SERVER_HTTP}/create-unban-session`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    const data = await res.json();
-
-    if (data.url) {
-      // Redirect to Stripe checkout
-      window.location.href = data.url;
-    } else if (data.error === 'Stripe not configured') {
-      alert('Payment system is not set up yet. Contact the site admin.\n\nTo set up payments, add STRIPE_SECRET_KEY to your Railway environment variables.');
-      btn.textContent = '🔓 Get Unbanned — $7.99';
-      btn.disabled = false;
-    } else {
-      alert(data.error || 'Something went wrong');
-      btn.textContent = '🔓 Get Unbanned — $7.99';
-      btn.disabled = false;
-    }
-  } catch (e) {
-    alert('Could not connect to payment server. Please try again.');
-    btn.textContent = '🔓 Get Unbanned — $7.99';
-    btn.disabled = false;
-  }
 }
 
 // ══════════════════════════════════════════

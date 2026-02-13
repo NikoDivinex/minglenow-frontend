@@ -887,6 +887,8 @@ const SIGNALING_SERVER = window.location.hostname === 'localhost'
   ? 'ws://localhost:3001'
   : 'wss://minglenow-server-production.up.railway.app';  // ← REPLACE THIS after deploying server
 
+const SERVER_HTTP = SIGNALING_SERVER.replace('wss://', 'https://').replace('ws://', 'http://');
+
 const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
@@ -1574,7 +1576,6 @@ window.addEventListener('beforeunload', cleanup);
 // ══════════════════════════════════════════
 // BAN SCREEN
 // ══════════════════════════════════════════
-const SERVER_HTTP = SIGNALING_SERVER.replace('wss://', 'https://').replace('ws://', 'http://');
 
 function showBanScreen(reason) {
   document.getElementById('banReason').textContent = reason || 'Violation of community guidelines';

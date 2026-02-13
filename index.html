@@ -394,6 +394,34 @@
     .legal-content h1 { font-size:1.7rem; }
   }
 
+  /* ═══ USERNAME MODAL ═══ */
+  .username-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(12px);
+    z-index:250; display:none; align-items:center; justify-content:center; padding:20px;
+  }
+  .username-overlay.active { display:flex; }
+  .username-box {
+    background:var(--surface); border:1px solid var(--border); border-radius:20px;
+    padding:36px 28px; max-width:360px; width:100%; text-align:center;
+    animation:slideUp 0.3s ease;
+  }
+  .username-box h2 { font-size:1.3rem; font-weight:800; margin-bottom:6px; }
+  .username-box .usub { font-size:0.8rem; color:var(--text-dim); margin-bottom:20px; line-height:1.5; }
+  .username-box input {
+    width:100%; padding:14px 16px; background:var(--surface-2); border:1px solid var(--border);
+    border-radius:12px; color:var(--text); font-family:'Outfit',sans-serif; font-size:1rem;
+    text-align:center; outline:none; margin-bottom:14px; letter-spacing:0.5px;
+  }
+  .username-box input:focus { border-color:var(--accent); }
+  .username-box .uname-error { color:var(--red); font-size:0.75rem; margin-bottom:10px; display:none; }
+  .username-box button {
+    width:100%; padding:14px; background:linear-gradient(135deg,var(--accent),#e84393);
+    border:none; border-radius:12px; color:#fff; font-family:'Outfit',sans-serif;
+    font-weight:700; font-size:1rem; cursor:pointer; transition:transform 0.2s;
+  }
+  .username-box button:hover { transform:translateY(-2px); }
+  .username-box button:active { transform:scale(0.97); }
+
   /* ═══ GIFT SYSTEM ═══ */
   .coin-display { display:flex; align-items:center; gap:5px; background:linear-gradient(135deg,#f39c12,#f1c40f); padding:4px 12px; border-radius:100px; font-weight:700; font-size:0.8rem; color:#000; cursor:pointer; transition:transform 0.2s; }
   .coin-display:hover { transform:scale(1.05); }
@@ -946,6 +974,17 @@
   <button class="mobile-chat-toggle" id="mobileChatToggle" onclick="toggleMobileChat()">💬<span class="chat-badge" id="chatBadge">!</span></button>
 </div>
 
+<!-- Username Modal -->
+<div class="username-overlay" id="usernameOverlay">
+  <div class="username-box">
+    <h2>👋 Choose a Username</h2>
+    <p class="usub">Pick a name to use in your chat. Your partner will see this instead of "Stranger".</p>
+    <input type="text" id="usernameInput" placeholder="Enter username..." maxlength="20" autocomplete="off">
+    <div class="uname-error" id="unameError">Username must be 2-20 characters, letters & numbers only</div>
+    <button onclick="confirmUsername()">Start Chatting →</button>
+  </div>
+</div>
+
 <!-- Report Modal -->
 <div class="report-overlay" id="reportOverlay">
   <div class="report-box">
@@ -1014,6 +1053,8 @@ let chatMode = 'video';       // 'video' | 'text'
 let micOn = true, camOn = true;
 let isConnected = false;
 let myId = null;
+let myUsername = '';
+let partnerUsername = 'Stranger';
 let interests = [];
 
 // ══════════════════════════════════════════
@@ -1067,8 +1108,44 @@ function goHome() {
 async function startChat(mode) {
   chatMode = mode;
 
+  // Check if we already have a saved username
+  const saved = sessionStorage.getItem('mingleUsername');
+  if (saved) {
+    myUsername = saved;
+    proceedToChat();
+  } else {
+    // Show username prompt
+    document.getElementById('usernameInput').value = '';
+    document.getElementById('unameError').style.display = 'none';
+    document.getElementById('usernameOverlay').classList.add('active');
+    document.getElementById('usernameInput').focus();
+  }
+}
+
+function confirmUsername() {
+  const input = document.getElementById('usernameInput').value.trim();
+  const errEl = document.getElementById('unameError');
+
+  if (input.length < 2 || input.length > 20) {
+    errEl.textContent = 'Username must be 2-20 characters';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!/^[a-zA-Z0-9_]+$/.test(input)) {
+    errEl.textContent = 'Letters, numbers, and underscores only';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  myUsername = input;
+  sessionStorage.setItem('mingleUsername', myUsername);
+  document.getElementById('usernameOverlay').classList.remove('active');
+  proceedToChat();
+}
+
+async function proceedToChat() {
   // Get media for video mode
-  if (mode === 'video') {
+  if (chatMode === 'video') {
     try {
       const isMobile = window.innerWidth <= 768;
       localStream = await navigator.mediaDevices.getUserMedia({
@@ -1099,6 +1176,9 @@ async function startChat(mode) {
     document.getElementById('chatSidebar').style.flex = '1';
   }
 
+  // Update "You" label with username
+  document.querySelector('.vid-box .vid-label').textContent = myUsername;
+
   showPage('pageChat');
   setStatus('searching', 'Connecting to server...');
   connectWebSocket();
@@ -1114,7 +1194,7 @@ function connectWebSocket() {
 
   ws.onopen = () => {
     setStatus('searching', 'Looking for someone...');
-    ws.send(JSON.stringify({ type: 'join_queue', interests }));
+    ws.send(JSON.stringify({ type: 'join_queue', interests, username: myUsername }));
   };
 
   ws.onmessage = (event) => {
@@ -1160,7 +1240,12 @@ async function handleSignalingMessage(msg) {
 
     case 'matched':
       isConnected = true;
-      setStatus('connected', 'Connected!');
+      partnerUsername = msg.partnerUsername || 'Stranger';
+      setStatus('connected', `Connected to ${partnerUsername}!`);
+
+      // Update stranger video label
+      const strangerLabels = document.querySelectorAll('.vid-box:last-child .vid-label');
+      strangerLabels.forEach(l => l.textContent = partnerUsername);
 
       const sharedText = msg.sharedInterests?.length
         ? `Shared: ${msg.sharedInterests.join(', ')}`
@@ -1170,7 +1255,7 @@ async function handleSignalingMessage(msg) {
       if (msg.sharedInterests?.length) {
         addSystemMessage(`🎯 You both like: ${msg.sharedInterests.join(', ')}`);
       } else {
-        addSystemMessage('🎉 You\'re connected with a stranger!');
+        addSystemMessage(`🎉 You're connected with ${partnerUsername}!`);
       }
 
       document.getElementById('remotePlaceholderText').textContent = 'Connecting video...';
@@ -1213,8 +1298,9 @@ async function handleSignalingMessage(msg) {
     case 'partner_disconnected':
       isConnected = false;
       closePeerConnection();
-      setStatus('disconnected', 'Stranger disconnected');
-      addSystemMessage('Stranger has disconnected.');
+      setStatus('disconnected', `${partnerUsername} disconnected`);
+      addSystemMessage(`${partnerUsername} has disconnected.`);
+      partnerUsername = 'Stranger';
       document.getElementById('remotePlaceholderText').textContent = 'Disconnected';
       document.getElementById('remoteVideo').style.display = 'none';
       document.getElementById('remotePlaceholder').style.display = 'flex';
@@ -1345,13 +1431,14 @@ function updateMediaBtns() {
 
 function skipNext() {
   isConnected = false;
+  partnerUsername = 'Stranger';
   closePeerConnection();
   document.getElementById('chatMessages').innerHTML = '';
   document.getElementById('matchInfo').textContent = '';
   unreadMobile = 0;
   document.getElementById('chatBadge').classList.remove('has-msg');
   setStatus('searching', 'Looking for someone...');
-  wsSend({ type: 'skip', interests });
+  wsSend({ type: 'skip', interests, username: myUsername });
 }
 
 // ══════════════════════════════════════════
@@ -1363,7 +1450,7 @@ function addChatBubble(who, text) {
   div.className = `chat-bubble ${who}`;
   const label = document.createElement('div');
   label.className = 'bubble-label';
-  label.textContent = who === 'you' ? 'You' : 'Stranger';
+  label.textContent = who === 'you' ? myUsername : partnerUsername;
   div.appendChild(label);
   div.appendChild(document.createTextNode(text));
   list.appendChild(div);
@@ -1574,22 +1661,19 @@ function sendGift(giftId) {
 function showGiftAnimation(emoji, name, direction) {
   const el = document.createElement('div');
   el.className = 'gift-float';
-  el.innerHTML = `<div class="gf-emoji">${emoji}</div><div class="gf-label">${direction === 'received' ? 'Stranger sent' : 'You sent'} ${name}!</div>`;
+  el.innerHTML = `<div class="gf-emoji">${emoji}</div><div class="gf-label">${direction === 'received' ? partnerUsername + ' sent' : 'You sent'} ${name}!</div>`;
 
-  // Position randomly in the video area
   const vw = window.innerWidth;
-  const vh = window.innerHeight;
   el.style.left = (Math.random() * (vw * 0.6) + vw * 0.2) + 'px';
   el.style.bottom = '140px';
 
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 3000);
 
-  // Also show in chat
   if (direction === 'received') {
-    addSystemMessage(`🎁 Stranger sent you a ${emoji} ${name}!`);
+    addSystemMessage(`🎁 ${partnerUsername} sent you a ${emoji} ${name}!`);
   } else {
-    addSystemMessage(`🎁 You sent a ${emoji} ${name}!`);
+    addSystemMessage(`🎁 You sent ${partnerUsername} a ${emoji} ${name}!`);
   }
 }
 
@@ -1733,14 +1817,16 @@ async function adminLoadStats() {
     usersDiv.innerHTML = '<div class="empty-msg">No users online</div>';
   } else {
     usersDiv.innerHTML = `<table class="admin-table">
-      <tr><th>ID</th><th>IP</th><th>Interests</th><th>Status</th><th>Actions</th></tr>
+      <tr><th>Username</th><th>IP</th><th>Coins</th><th>Status</th><th>Actions</th></tr>
       ${stats.onlineUsers.map(u => `<tr>
-        <td>${u.id}</td>
+        <td><strong>${u.username || 'Anonymous'}</strong></td>
         <td class="ip">${u.ip}</td>
-        <td>${u.interests.join(', ') || '-'}</td>
-        <td>${u.hasParter ? '<span class="admin-badge paired">Chatting</span>' : '<span class="admin-badge online">Waiting</span>'}</td>
-        <td>
+        <td style="color:#f1c40f;font-weight:700">🪙 ${u.coins || 0}</td>
+        <td>${u.hasPartner ? '<span class="admin-badge paired">Chatting</span>' : '<span class="admin-badge online">Waiting</span>'}</td>
+        <td style="display:flex;gap:4px;flex-wrap:wrap">
           <button class="admin-action-btn kick" onclick="adminKick('${u.id}')">Kick</button>
+          <button class="admin-action-btn ban" onclick="adminBanUser('${u.fullIP}','${u.username || u.id}')">Ban</button>
+          <button class="admin-action-btn unban" onclick="adminGiveCoinsTo('${u.fullIP}')">+Coins</button>
         </td>
       </tr>`).join('')}
     </table>`;
@@ -1753,8 +1839,9 @@ async function adminLoadStats() {
     bansDiv.innerHTML = '<div class="empty-msg">No bans yet</div>';
   } else {
     bansDiv.innerHTML = `<table class="admin-table">
-      <tr><th>IP</th><th>Reason</th><th>Date</th><th>Status</th><th>Actions</th></tr>
+      <tr><th>Username</th><th>IP</th><th>Reason</th><th>Date</th><th>Status</th><th>Actions</th></tr>
       ${bansData.bans.map(b => `<tr>
+        <td><strong>${b.username || '-'}</strong></td>
         <td class="ip">${b.ip}</td>
         <td>${b.reason}</td>
         <td>${new Date(b.timestamp).toLocaleDateString()}</td>
@@ -1762,6 +1849,23 @@ async function adminLoadStats() {
         <td>${!b.paid ? `<button class="admin-action-btn unban" onclick="adminUnbanDirect('${b.fullIP}')">Unban</button>` : '-'}</td>
       </tr>`).join('')}
     </table>`;
+  }
+}
+
+function adminBanUser(ip, username) {
+  const reason = prompt(`Ban ${username}? Enter reason:`, 'Banned by admin');
+  if (reason !== null) {
+    adminFetch('/admin/ban', 'POST', { ip, reason: reason || 'Banned by admin' }).then(() => adminLoadStats());
+  }
+}
+
+function adminGiveCoinsTo(ip) {
+  const amount = prompt('How many coins to give?', '100');
+  if (amount && parseInt(amount) > 0) {
+    adminFetch('/admin/give-coins', 'POST', { ip, amount: parseInt(amount) }).then(res => {
+      if (res?.success) alert(`Gave ${amount} coins. New balance: ${res.balance}`);
+      adminLoadStats();
+    });
   }
 }
 
@@ -1856,6 +1960,10 @@ window.addEventListener('hashchange', checkAdminRoute);
 // Allow pressing Enter on login fields
 document.getElementById('adminPass')?.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') adminDoLogin();
+});
+
+document.getElementById('usernameInput')?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') confirmUsername();
 });
 
 // ══════════════════════════════════════════

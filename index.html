@@ -422,6 +422,79 @@
   .username-box button:hover { transform:translateY(-2px); }
   .username-box button:active { transform:scale(0.97); }
 
+  /* ═══ ENTRANCE EFFECTS ═══ */
+  .entrance-overlay {
+    position:fixed; inset:0; z-index:180; pointer-events:none;
+    display:flex; align-items:center; justify-content:center;
+    animation:entranceFade 3s ease forwards;
+  }
+  .entrance-overlay .ent-content {
+    text-align:center; animation:entrancePop 0.6s cubic-bezier(0.175,0.885,0.32,1.275);
+  }
+  .entrance-overlay .ent-emoji { font-size:4rem; margin-bottom:8px; }
+  .entrance-overlay .ent-text {
+    font-family:'Outfit',sans-serif; font-weight:800; font-size:1.3rem;
+    color:#fff; text-shadow:0 4px 20px rgba(0,0,0,0.7);
+  }
+  .entrance-overlay .ent-sub { font-size:0.8rem; color:rgba(255,255,255,0.7); margin-top:4px; }
+  .entrance-fire { background:radial-gradient(circle at 50% 60%, rgba(255,69,0,0.4), transparent 70%); }
+  .entrance-star { background:radial-gradient(circle at 50% 60%, rgba(255,215,0,0.4), transparent 70%); }
+  .entrance-crown { background:radial-gradient(circle at 50% 60%, rgba(138,43,226,0.4), transparent 70%); }
+  .entrance-diamond { background:radial-gradient(circle at 50% 60%, rgba(0,191,255,0.4), transparent 70%); }
+  .entrance-rocket { background:radial-gradient(circle at 50% 60%, rgba(255,99,71,0.4), transparent 70%); }
+  @keyframes entrancePop { 0%{transform:scale(0) rotate(-10deg);opacity:0} 100%{transform:scale(1) rotate(0);opacity:1} }
+  @keyframes entranceFade { 0%{opacity:1} 70%{opacity:1} 100%{opacity:0} }
+
+  /* ═══ NAME COLORS ═══ */
+  .name-gold { color:#f1c40f !important; }
+  .name-purple { color:#a55eea !important; }
+  .name-red { color:#e84393 !important; }
+  .name-cyan { color:#00cec9 !important; }
+  .name-green { color:#00b894 !important; }
+  .name-rainbow { background:linear-gradient(90deg,#f1c40f,#e84393,#a55eea,#00cec9,#00b894,#f1c40f); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; font-weight:800 !important; }
+
+  /* ═══ BUBBLE THEMES ═══ */
+  .bubble-neon .chat-bubble.stranger { background:rgba(0,255,157,0.1); border:1px solid rgba(0,255,157,0.4); box-shadow:0 0 12px rgba(0,255,157,0.15); }
+  .bubble-gradient .chat-bubble.stranger { background:linear-gradient(135deg,rgba(108,92,231,0.2),rgba(232,67,147,0.2)); border:1px solid rgba(108,92,231,0.3); }
+  .bubble-dark .chat-bubble.stranger { background:rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.1); }
+  .bubble-retro .chat-bubble.stranger { background:rgba(255,165,0,0.15); border:1px solid rgba(255,165,0,0.3); font-family:monospace; }
+  .bubble-royal .chat-bubble.stranger { background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(139,69,19,0.15)); border:1px solid rgba(255,215,0,0.4); }
+
+  /* ═══ PERKS SHOP MODAL ═══ */
+  .perks-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px);
+    z-index:210; display:none; align-items:flex-start; justify-content:center; padding:20px; overflow-y:auto;
+  }
+  .perks-overlay.active { display:flex; }
+  .perks-shop {
+    background:var(--surface); border:1px solid var(--border); border-radius:20px;
+    padding:24px; max-width:440px; width:100%; margin-top:40px; margin-bottom:40px;
+    animation:slideUp 0.3s ease;
+  }
+  .perks-shop h3 { font-size:1.2rem; font-weight:800; text-align:center; margin-bottom:4px; }
+  .perks-shop .ps-sub { text-align:center; font-size:0.8rem; color:var(--text-dim); margin-bottom:16px; }
+  .perks-section { margin-bottom:20px; }
+  .perks-section h4 { font-size:0.85rem; font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+  .perk-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+  .perk-item {
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    padding:10px 6px; border-radius:10px; background:var(--surface-2); border:2px solid var(--border);
+    cursor:pointer; transition:all 0.2s; text-align:center;
+  }
+  .perk-item:hover { border-color:var(--accent); }
+  .perk-item:active { transform:scale(0.95); }
+  .perk-item.equipped { border-color:#f1c40f; background:rgba(241,196,15,0.08); }
+  .perk-item .pi-icon { font-size:1.3rem; }
+  .perk-item .pi-name { font-size:0.65rem; font-weight:600; color:var(--text); }
+  .perk-item .pi-cost { font-size:0.6rem; color:#f1c40f; font-weight:700; }
+  .perk-item .pi-owned { font-size:0.6rem; color:var(--green); font-weight:700; }
+  .perk-color-swatch { width:24px; height:24px; border-radius:50%; display:inline-block; }
+  .perk-color-rainbow { background:conic-gradient(#f1c40f,#e84393,#a55eea,#00cec9,#00b894,#f1c40f); }
+  .perks-close { display:block; width:100%; text-align:center; background:none; border:none; color:var(--text-dim); font-family:'Outfit',sans-serif; font-size:0.85rem; cursor:pointer; margin-top:8px; padding:8px; }
+  .perks-close:hover { color:var(--text); }
+  .reconnect-btn { background:linear-gradient(135deg,#e84393,#fd79a8) !important; font-size:0.75rem !important; }
+  @media(max-width:480px){ .perk-grid { grid-template-columns:repeat(2,1fr); } }
+
   /* ═══ GIFT SYSTEM ═══ */
   .coin-display { display:flex; align-items:center; gap:5px; background:linear-gradient(135deg,#f39c12,#f1c40f); padding:4px 12px; border-radius:100px; font-weight:700; font-size:0.8rem; color:#000; cursor:pointer; transition:transform 0.2s; }
   .coin-display:hover { transform:scale(1.05); }
@@ -917,6 +990,7 @@
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <div class="coin-display" onclick="openCoinShop()" title="Buy M Coins"><span class="coin-icon">🪙</span><span id="coinBalance">0</span></div>
+      <div class="coin-display" onclick="openPerksShop()" title="Perks Shop" style="background:linear-gradient(135deg,var(--accent),#e84393);color:#fff">✨</div>
       <div class="online-badge" style="font-size:0.8rem;padding:6px 12px">
         <span class="online-dot"></span><span id="onlineCount2">0</span>
       </div>
@@ -943,6 +1017,7 @@
         <button class="ctrl-btn gift-btn" onclick="toggleGiftTray()" title="Send Gift" id="btnGift">🎁</button>
         <button class="ctrl-btn end" onclick="goHome()" title="Stop">✕</button>
         <button class="ctrl-btn next" onclick="skipNext()" title="Next">⏭ Next</button>
+        <button class="ctrl-btn reconnect-btn" onclick="doReconnect()" title="Reconnect (50 coins)" id="btnReconnect">🔄 Reconnect</button>
         <button class="ctrl-btn" onclick="openReport()" title="Report" style="font-size:0.9rem">🚩</button>
 
         <!-- Gift Tray -->
@@ -995,6 +1070,36 @@
     <button class="report-option" onclick="submitReport('Spam')">Spam</button>
     <button class="report-option" onclick="submitReport('Underage user')">Underage user</button>
     <button class="report-cancel" onclick="closeReport()">Cancel</button>
+  </div>
+</div>
+
+<!-- Perks Shop Modal -->
+<div class="perks-overlay" id="perksOverlay">
+  <div class="perks-shop">
+    <h3>✨ Perks Shop</h3>
+    <p class="ps-sub">Spend your M Coins to customize your look! 🪙 <strong id="perksBalance">0</strong></p>
+
+    <div class="perks-section">
+      <h4>🎨 Username Color</h4>
+      <div class="perk-grid" id="perkColorsGrid"></div>
+    </div>
+
+    <div class="perks-section">
+      <h4>💬 Chat Bubble Theme</h4>
+      <div class="perk-grid" id="perkBubblesGrid"></div>
+    </div>
+
+    <div class="perks-section">
+      <h4>⚡ Entrance Effect</h4>
+      <div class="perk-grid" id="perkEntrancesGrid"></div>
+    </div>
+
+    <div class="perks-section">
+      <h4>🌍 Region Filter</h4>
+      <div class="perk-grid" id="perkRegionsGrid"></div>
+    </div>
+
+    <button class="perks-close" onclick="closePerksShop()">Close</button>
   </div>
 </div>
 
@@ -1228,6 +1333,7 @@ async function handleSignalingMessage(msg) {
       myId = msg.id;
       updateOnlineCount(msg.online);
       if (msg.coins !== undefined) updateCoinDisplay(msg.coins);
+      if (msg.perks) { myPerks = msg.perks; applyMyPerks(); }
       break;
 
     case 'online_count':
@@ -1241,11 +1347,21 @@ async function handleSignalingMessage(msg) {
     case 'matched':
       isConnected = true;
       partnerUsername = msg.partnerUsername || 'Stranger';
+      partnerPerks = msg.partnerPerks || {};
       setStatus('connected', `Connected to ${partnerUsername}!`);
 
       // Update stranger video label
       const strangerLabels = document.querySelectorAll('.vid-box:last-child .vid-label');
       strangerLabels.forEach(l => l.textContent = partnerUsername);
+
+      // Apply perks
+      applyPartnerPerks();
+      applyMyPerks();
+
+      // Show entrance effect if partner has one
+      if (partnerPerks.entrance && partnerPerks.entrance !== 'none') {
+        showEntranceEffect(partnerUsername, partnerPerks.entrance);
+      }
 
       const sharedText = msg.sharedInterests?.length
         ? `Shared: ${msg.sharedInterests.join(', ')}`
@@ -1325,6 +1441,12 @@ async function handleSignalingMessage(msg) {
 
     case 'coins_updated':
       updateCoinDisplay(msg.balance);
+      break;
+
+    case 'perks_updated':
+      myPerks = msg.perks || {};
+      if (msg.balance !== undefined) updateCoinDisplay(msg.balance);
+      applyMyPerks();
       break;
 
     case 'banned':
@@ -1450,7 +1572,13 @@ function addChatBubble(who, text) {
   div.className = `chat-bubble ${who}`;
   const label = document.createElement('div');
   label.className = 'bubble-label';
-  label.textContent = who === 'you' ? myUsername : partnerUsername;
+  if (who === 'you') {
+    label.textContent = myUsername;
+    if (myPerks.nameColor && myPerks.nameColor !== 'none') label.classList.add(`name-${myPerks.nameColor}`);
+  } else {
+    label.textContent = partnerUsername;
+    if (partnerPerks.nameColor) label.classList.add(`name-${partnerPerks.nameColor}`);
+  }
   div.appendChild(label);
   div.appendChild(document.createTextNode(text));
   list.appendChild(div);
@@ -1575,6 +1703,199 @@ function notifyMobileChat() {
     sidebar.style.transform = '';
   });
 })();
+
+// ══════════════════════════════════════════
+// PERKS SYSTEM
+// ══════════════════════════════════════════
+let myPerks = {};
+let partnerPerks = {};
+let perksCatalog = {};
+
+async function loadPerksCatalog() {
+  try {
+    const res = await fetch(`${SERVER_HTTP}/perks/catalog`);
+    const data = await res.json();
+    perksCatalog = data.perks || {};
+  } catch (e) { console.log('Could not load perks catalog'); }
+}
+
+async function loadMyPerks() {
+  try {
+    const res = await fetch(`${SERVER_HTTP}/perks/mine`);
+    const data = await res.json();
+    myPerks = data.perks || {};
+    updateCoinDisplay(data.balance);
+  } catch (e) {}
+}
+
+function openPerksShop() {
+  document.getElementById('perksBalance').textContent = myCoins;
+  renderPerksShop();
+  document.getElementById('perksOverlay').classList.add('active');
+}
+
+function closePerksShop() {
+  document.getElementById('perksOverlay').classList.remove('active');
+}
+
+function renderPerksShop() {
+  if (!perksCatalog.nameColors) return;
+
+  // Name colors
+  const colorsGrid = document.getElementById('perkColorsGrid');
+  colorsGrid.innerHTML = Object.entries(perksCatalog.nameColors).map(([id, c]) => {
+    const equipped = myPerks.nameColor === id;
+    const swatchClass = id === 'rainbow' ? 'perk-color-swatch perk-color-rainbow' : 'perk-color-swatch';
+    const swatchStyle = id !== 'rainbow' ? `background:${c.color}` : '';
+    return `<div class="perk-item ${equipped ? 'equipped' : ''}" onclick="buyPerk('nameColor','${id}')">
+      <div class="${swatchClass}" style="${swatchStyle}"></div>
+      <div class="pi-name">${c.name}</div>
+      ${equipped ? '<div class="pi-owned">✓ Equipped</div>' : `<div class="pi-cost">🪙 ${c.cost}</div>`}
+    </div>`;
+  }).join('') + `<div class="perk-item ${!myPerks.nameColor ? 'equipped' : ''}" onclick="buyPerk('nameColor','none')">
+    <div class="pi-icon">🚫</div><div class="pi-name">Default</div>
+    ${!myPerks.nameColor ? '<div class="pi-owned">✓ Active</div>' : '<div class="pi-cost">Free</div>'}
+  </div>`;
+
+  // Bubble themes
+  const bubblesGrid = document.getElementById('perkBubblesGrid');
+  bubblesGrid.innerHTML = Object.entries(perksCatalog.bubbleThemes).map(([id, b]) => {
+    const equipped = myPerks.bubbleTheme === id;
+    const icons = { neon:'💚', gradient:'🌈', dark:'🖤', retro:'📺', royal:'👑' };
+    return `<div class="perk-item ${equipped ? 'equipped' : ''}" onclick="buyPerk('bubbleTheme','${id}')">
+      <div class="pi-icon">${icons[id] || '💬'}</div>
+      <div class="pi-name">${b.name}</div>
+      ${equipped ? '<div class="pi-owned">✓ Equipped</div>' : `<div class="pi-cost">🪙 ${b.cost}</div>`}
+    </div>`;
+  }).join('') + `<div class="perk-item ${!myPerks.bubbleTheme ? 'equipped' : ''}" onclick="buyPerk('bubbleTheme','none')">
+    <div class="pi-icon">🚫</div><div class="pi-name">Default</div>
+    ${!myPerks.bubbleTheme ? '<div class="pi-owned">✓ Active</div>' : '<div class="pi-cost">Free</div>'}
+  </div>`;
+
+  // Entrances
+  const entrancesGrid = document.getElementById('perkEntrancesGrid');
+  entrancesGrid.innerHTML = Object.entries(perksCatalog.entrances).map(([id, e]) => {
+    const equipped = myPerks.entrance === id;
+    return `<div class="perk-item ${equipped ? 'equipped' : ''}" onclick="buyPerk('entrance','${id}')">
+      <div class="pi-icon">${e.emoji}</div>
+      <div class="pi-name">${e.name}</div>
+      ${equipped ? '<div class="pi-owned">✓ Equipped</div>' : `<div class="pi-cost">🪙 ${e.cost}</div>`}
+    </div>`;
+  }).join('') + `<div class="perk-item ${!myPerks.entrance ? 'equipped' : ''}" onclick="buyPerk('entrance','none')">
+    <div class="pi-icon">🚫</div><div class="pi-name">None</div>
+    ${!myPerks.entrance ? '<div class="pi-owned">✓ Active</div>' : '<div class="pi-cost">Free</div>'}
+  </div>`;
+
+  // Regions
+  const regionsGrid = document.getElementById('perkRegionsGrid');
+  const regionIcons = { any:'🌎', us:'🇺🇸', eu:'🇪🇺', asia:'🌏', latam:'🌎', mena:'🌍' };
+  regionsGrid.innerHTML = Object.entries(perksCatalog.regions).map(([id, r]) => {
+    const equipped = (myPerks.region || 'any') === id;
+    return `<div class="perk-item ${equipped ? 'equipped' : ''}" onclick="buyPerk('region','${id}')">
+      <div class="pi-icon">${regionIcons[id] || '🌎'}</div>
+      <div class="pi-name">${r.name}</div>
+      ${equipped ? '<div class="pi-owned">✓ Active</div>' : (r.cost > 0 ? `<div class="pi-cost">🪙 ${r.cost}</div>` : '<div class="pi-cost">Free</div>')}
+    </div>`;
+  }).join('');
+}
+
+async function buyPerk(type, id) {
+  // Reset perk
+  if (id === 'none') {
+    myPerks[type] = null;
+    // Tell server to clear it
+    try {
+      await fetch(`${SERVER_HTTP}/perks/buy`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, id: 'none' }),
+      });
+    } catch(e) {}
+    renderPerksShop();
+    applyMyPerks();
+    return;
+  }
+
+  try {
+    const res = await fetch(`${SERVER_HTTP}/perks/buy`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, id }),
+    });
+    const data = await res.json();
+    if (data.error === 'Not enough coins') {
+      closePerksShop();
+      openCoinShop();
+      return;
+    }
+    if (data.success) {
+      myPerks = data.perks;
+      updateCoinDisplay(data.balance);
+      document.getElementById('perksBalance').textContent = data.balance;
+      renderPerksShop();
+      applyMyPerks();
+      // Show success toast
+      const toast = document.createElement('div');
+      toast.className = 'warning-toast';
+      toast.style.background = 'linear-gradient(135deg,var(--accent),#e84393)';
+      toast.style.color = '#fff';
+      toast.textContent = '✨ Perk equipped!';
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2500);
+    }
+  } catch (e) { console.error('Buy perk error:', e); }
+}
+
+// Apply my name color on my own chat bubbles
+function applyMyPerks() {
+  // Name color on video label
+  const myLabel = document.querySelector('.vid-box .vid-label');
+  if (myLabel) {
+    myLabel.className = 'vid-label';
+    if (myPerks.nameColor && myPerks.nameColor !== 'none') myLabel.classList.add(`name-${myPerks.nameColor}`);
+  }
+}
+
+// Apply partner's perks to their elements
+function applyPartnerPerks() {
+  // Partner name color on video label
+  const labels = document.querySelectorAll('.vid-box:last-child .vid-label');
+  labels.forEach(l => {
+    l.className = 'vid-label';
+    if (partnerPerks.nameColor) l.classList.add(`name-${partnerPerks.nameColor}`);
+  });
+  // Bubble theme on chat messages
+  const chatList = document.getElementById('chatMessages');
+  if (chatList) {
+    chatList.className = 'chat-messages-list';
+    if (partnerPerks.bubbleTheme) chatList.classList.add(`bubble-${partnerPerks.bubbleTheme}`);
+  }
+}
+
+// Show entrance animation
+function showEntranceEffect(username, entranceId) {
+  if (!entranceId || entranceId === 'none') return;
+  const entranceEmojis = { fire:'🔥', star:'⭐', crown:'👑', diamond:'💎', rocket:'🚀' };
+  const entranceNames = { fire:'Fire Entrance', star:'Star Entrance', crown:'VIP Entrance', diamond:'Diamond Entrance', rocket:'Rocket Entrance' };
+  const emoji = entranceEmojis[entranceId] || '✨';
+  const el = document.createElement('div');
+  el.className = `entrance-overlay entrance-${entranceId}`;
+  el.innerHTML = `<div class="ent-content">
+    <div class="ent-emoji">${emoji}${emoji}${emoji}</div>
+    <div class="ent-text">${username} has arrived!</div>
+    <div class="ent-sub">${entranceNames[entranceId] || ''}</div>
+  </div>`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+// Reconnect
+function doReconnect() {
+  if (!ws || ws.readyState !== 1) return;
+  wsSend({ type: 'reconnect' });
+}
+
+// Load catalogs on startup
+loadPerksCatalog();
+loadMyPerks();
 
 // ══════════════════════════════════════════
 // M COINS & GIFT SYSTEM

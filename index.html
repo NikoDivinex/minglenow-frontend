@@ -858,6 +858,11 @@
         <input type="text" id="broadcastInput" placeholder="Type a broadcast message for all users...">
         <button style="background:var(--accent);color:#fff" onclick="adminBroadcast()">📢 Broadcast</button>
       </div>
+      <div class="admin-action-row">
+        <input type="text" id="giveCoinsIP" placeholder="Enter IP address">
+        <input type="number" id="giveCoinsAmount" placeholder="Amount" min="1" style="max-width:120px">
+        <button style="background:linear-gradient(135deg,#f39c12,#f1c40f);color:#000" onclick="adminGiveCoins()">🪙 Give Coins</button>
+      </div>
     </div>
 
     <!-- Online Users -->
@@ -1799,6 +1804,21 @@ async function adminBroadcast() {
   if (res?.success) {
     alert(`Broadcast sent to ${res.sent} users`);
     document.getElementById('broadcastInput').value = '';
+  }
+}
+
+async function adminGiveCoins() {
+  const ip = document.getElementById('giveCoinsIP').value.trim();
+  const amount = parseInt(document.getElementById('giveCoinsAmount').value);
+  if (!ip) return alert('Enter an IP address');
+  if (!amount || amount < 1) return alert('Enter a valid coin amount');
+  const res = await adminFetch('/admin/give-coins', 'POST', { ip, amount });
+  if (res?.success) {
+    alert(`Gave ${amount} M Coins to ${ip.slice(0,8)}***\nNew balance: ${res.balance}`);
+    document.getElementById('giveCoinsIP').value = '';
+    document.getElementById('giveCoinsAmount').value = '';
+  } else {
+    alert(res?.error || 'Failed to give coins');
   }
 }
 

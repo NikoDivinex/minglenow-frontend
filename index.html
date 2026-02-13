@@ -363,6 +363,36 @@
     .ctrl-btn { width:36px; height:36px; font-size:0.85rem; }
     .chat-nav { padding:4px 12px; }
   }
+  /* ═══ LEGAL PAGES ═══ */
+  .legal-content {
+    max-width:760px; margin:0 auto; padding:20px 40px 80px;
+    line-height:1.8; font-size:0.92rem; color:var(--text-dim);
+  }
+  .legal-content h1 {
+    font-size:2.2rem; font-weight:800; color:var(--text);
+    margin-bottom:8px; letter-spacing:-0.5px;
+  }
+  .legal-content .legal-updated {
+    font-size:0.8rem; color:var(--accent-glow); margin-bottom:32px;
+    font-weight:500;
+  }
+  .legal-content h2 {
+    font-size:1.15rem; font-weight:700; color:var(--text);
+    margin-top:32px; margin-bottom:10px;
+  }
+  .legal-content h3 {
+    font-size:0.95rem; font-weight:600; color:var(--text);
+    margin-top:20px; margin-bottom:8px;
+  }
+  .legal-content p {
+    margin-bottom:14px;
+  }
+  .legal-content strong { color:var(--text); }
+  @media(max-width:768px){
+    .legal-content { padding:16px 20px 60px; }
+    .legal-content h1 { font-size:1.7rem; }
+  }
+
   /* ═══ BAN SCREEN ═══ */
   .ban-overlay {
     position:fixed; inset:0; background:rgba(0,0,0,0.85);
@@ -460,7 +490,192 @@
     <div class="faq-item"><div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Is it free?<span class="faq-arrow">▾</span></div><div class="faq-a">Completely free. No hidden fees, no account needed.</div></div>
   </section>
 
-  <footer><div>© 2026 MingleNow</div><div style="margin-top:8px"><a href="#">Blog</a><a href="#">Rules</a><a href="#">Terms</a><a href="#">Privacy</a></div></footer>
+  <footer><div>© 2026 MingleNow</div><div style="margin-top:8px"><a href="#" onclick="showLegalPage('rules');return false">Rules</a><a href="#" onclick="showLegalPage('terms');return false">Terms</a><a href="#" onclick="showLegalPage('privacy');return false">Privacy</a></div></footer>
+</div>
+
+<!-- ════════════ RULES PAGE ════════════ -->
+<div class="page" id="pageRules">
+  <nav>
+    <div class="logo" onclick="showPage('pageLanding')" style="cursor:pointer"><div class="logo-icon">💬</div>MingleNow</div>
+    <a href="#" onclick="showPage('pageLanding');return false" style="color:var(--accent-glow);text-decoration:none;font-weight:600;font-size:0.9rem">← Back</a>
+  </nav>
+  <div class="legal-content">
+    <h1>Community Rules</h1>
+    <p class="legal-updated">Last updated: February 2026</p>
+
+    <p>MingleNow connects strangers for video and text conversations. To keep our community safe, respectful, and enjoyable for everyone, all users must follow these rules at all times. Violations may result in an immediate and permanent ban.</p>
+
+    <h2>1. Be Respectful</h2>
+    <p>Treat every person you connect with the way you'd want to be treated. Disagreements are fine — harassment, insults, and cruelty are not.</p>
+
+    <h2>2. No Nudity or Sexual Content</h2>
+    <p>Exposing yourself, performing sexual acts, or displaying sexually explicit material on camera is strictly prohibited. This includes partial nudity, suggestive behavior, and sharing links to explicit content. Violators will be banned immediately.</p>
+
+    <h2>3. No Hate Speech or Slurs</h2>
+    <p>Racial slurs, homophobic language, transphobic remarks, sexist comments, religious hatred, and any other form of discriminatory speech will result in an instant ban. This includes creative misspellings, abbreviations, or coded language designed to evade our filters.</p>
+
+    <h2>4. No Violence, Gore, or Harmful Content</h2>
+    <p>Do not show, share, or describe graphic violence, gore, self-harm, animal abuse, or any disturbing content. Do not threaten violence against anyone, even as a "joke."</p>
+
+    <h2>5. No Harassment or Bullying</h2>
+    <p>Targeting, following, intimidating, or repeatedly contacting someone who doesn't want to talk to you is harassment. If someone disconnects or asks you to stop, respect that.</p>
+
+    <h2>6. No Minors in Inappropriate Contexts</h2>
+    <p>MingleNow is intended for users aged 18 and older. Any content involving minors in sexual, exploitative, or dangerous contexts will result in an immediate permanent ban and may be reported to law enforcement authorities.</p>
+
+    <h2>7. No Spam or Advertising</h2>
+    <p>Don't use MingleNow to promote products, services, websites, social media accounts, or anything commercial. Don't send repetitive messages or flood the chat.</p>
+
+    <h2>8. No Illegal Activity</h2>
+    <p>Don't use MingleNow to plan, facilitate, or engage in any illegal activity. This includes drug sales, fraud, threats, doxxing, and distribution of illegal materials.</p>
+
+    <h2>9. No Impersonation</h2>
+    <p>Don't pretend to be someone else, including public figures, law enforcement, MingleNow staff, or other users.</p>
+
+    <h2>10. No Recording Without Consent</h2>
+    <p>Do not record, screenshot, or stream your conversations without the explicit consent of the other person. Distributing recorded conversations without consent is a serious violation.</p>
+
+    <h2>Reporting Violations</h2>
+    <p>If someone violates these rules, use the 🚩 Report button during your chat. Reports are reviewed and repeat offenders are automatically banned. False or malicious reporting is also a violation of these rules.</p>
+
+    <h2>Consequences</h2>
+    <p>Depending on the severity of the violation:</p>
+    <p>• <strong>Warning</strong> — for minor infractions like mildly inappropriate language<br>
+    • <strong>Immediate ban</strong> — for hate speech, slurs, nudity, threats, or repeated violations<br>
+    • <strong>Permanent ban + law enforcement referral</strong> — for content involving minors, credible threats, or serious illegal activity</p>
+    <p>Banned users may request an unban for a $7.99 fee. Repeat offenders who are banned again after paying will not be eligible for further unbans.</p>
+  </div>
+</div>
+
+<!-- ════════════ TERMS PAGE ════════════ -->
+<div class="page" id="pageTerms">
+  <nav>
+    <div class="logo" onclick="showPage('pageLanding')" style="cursor:pointer"><div class="logo-icon">💬</div>MingleNow</div>
+    <a href="#" onclick="showPage('pageLanding');return false" style="color:var(--accent-glow);text-decoration:none;font-weight:600;font-size:0.9rem">← Back</a>
+  </nav>
+  <div class="legal-content">
+    <h1>Terms of Service</h1>
+    <p class="legal-updated">Last updated: February 2026</p>
+
+    <p>By accessing or using MingleNow ("the Service"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree with these Terms, do not use the Service.</p>
+
+    <h2>1. Eligibility</h2>
+    <p>You must be at least 18 years of age to use MingleNow. By using the Service, you represent and warrant that you are 18 or older. We do not knowingly provide the Service to anyone under 18. If we discover a user is under 18, their access will be terminated immediately.</p>
+
+    <h2>2. Description of Service</h2>
+    <p>MingleNow is a platform that connects users for random one-on-one video and text conversations with strangers. The Service is provided "as is" and "as available." We do not guarantee the availability, quality, or safety of any interaction.</p>
+
+    <h2>3. User Conduct</h2>
+    <p>You agree to comply with our Community Rules at all times. You are solely responsible for your behavior and any content you share through the Service. You agree not to use the Service for any unlawful, harmful, or prohibited purpose.</p>
+
+    <h2>4. No Guarantee of Safety</h2>
+    <p>While we employ moderation tools, automated filters, and a reporting system, we cannot monitor or control all interactions on the platform. You use MingleNow at your own risk. We strongly encourage you not to share personal information (real name, address, phone number, financial details) with strangers.</p>
+
+    <h2>5. Privacy and Data</h2>
+    <p>Our use of your data is governed by our Privacy Policy. By using the Service, you consent to the practices described in our Privacy Policy.</p>
+
+    <h2>6. Bans and Moderation</h2>
+    <p>We reserve the right to ban, suspend, or restrict any user's access at our sole discretion, with or without notice, for any reason including but not limited to violations of our Community Rules. Banned users may request an unban by paying a $7.99 fee. We reserve the right to deny unban requests for severe or repeated violations. Ban decisions are final.</p>
+
+    <h2>7. Unban Payments</h2>
+    <p>Unban payments of $7.99 are non-refundable. Payment does not guarantee future access — if you are banned again after being unbanned, your access may be permanently revoked without the option to pay again. Payments are processed through Stripe and are subject to Stripe's terms and conditions.</p>
+
+    <h2>8. Intellectual Property</h2>
+    <p>The MingleNow name, logo, design, and code are our property. You may not copy, reproduce, or distribute any part of the Service without our written permission.</p>
+
+    <h2>9. Third-Party Services</h2>
+    <p>MingleNow uses third-party services including WebRTC (for video/audio), Stripe (for payments), and web hosting providers. We are not responsible for the availability or conduct of third-party services.</p>
+
+    <h2>10. Disclaimer of Warranties</h2>
+    <p>THE SERVICE IS PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. WE DO NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED, SECURE, OR ERROR-FREE.</p>
+
+    <h2>11. Limitation of Liability</h2>
+    <p>TO THE MAXIMUM EXTENT PERMITTED BY LAW, MINGLENOW AND ITS OPERATORS SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING FROM YOUR USE OF THE SERVICE, INCLUDING BUT NOT LIMITED TO EMOTIONAL DISTRESS, LOSS OF DATA, OR INTERACTIONS WITH OTHER USERS.</p>
+
+    <h2>12. Indemnification</h2>
+    <p>You agree to indemnify and hold harmless MingleNow and its operators from any claims, damages, or expenses arising from your use of the Service or violation of these Terms.</p>
+
+    <h2>13. Changes to Terms</h2>
+    <p>We may update these Terms at any time. Continued use of the Service after changes constitutes acceptance of the updated Terms. We will indicate the date of the most recent update at the top of this page.</p>
+
+    <h2>14. Governing Law</h2>
+    <p>These Terms shall be governed by and construed in accordance with applicable law. Any disputes arising from these Terms or the Service shall be resolved through binding arbitration.</p>
+
+    <h2>15. Contact</h2>
+    <p>For questions about these Terms, please contact us through the platform or at the email address listed on our website.</p>
+  </div>
+</div>
+
+<!-- ════════════ PRIVACY PAGE ════════════ -->
+<div class="page" id="pagePrivacy">
+  <nav>
+    <div class="logo" onclick="showPage('pageLanding')" style="cursor:pointer"><div class="logo-icon">💬</div>MingleNow</div>
+    <a href="#" onclick="showPage('pageLanding');return false" style="color:var(--accent-glow);text-decoration:none;font-weight:600;font-size:0.9rem">← Back</a>
+  </nav>
+  <div class="legal-content">
+    <h1>Privacy Policy</h1>
+    <p class="legal-updated">Last updated: February 2026</p>
+
+    <p>Your privacy matters to us. This Privacy Policy explains what information we collect, how we use it, and what choices you have.</p>
+
+    <h2>1. Information We Collect</h2>
+
+    <h3>Information collected automatically:</h3>
+    <p>• <strong>IP Address</strong> — Used for ban enforcement, abuse prevention, and approximate geographic matching. We partially mask stored IP addresses for privacy.<br>
+    • <strong>Device information</strong> — Browser type and basic device characteristics, used to optimize the experience.<br>
+    • <strong>Usage data</strong> — Connection timestamps, session duration, and feature usage for service improvement.</p>
+
+    <h3>Information you provide:</h3>
+    <p>• <strong>Chat messages</strong> — Text messages are processed in real-time by our moderation system and are not permanently stored after your session ends.<br>
+    • <strong>Interests</strong> — Topics you add for matching purposes. These are not linked to your identity.<br>
+    • <strong>Reports</strong> — When you report a user, we log the report reason and associated session data.</p>
+
+    <h3>Information we do NOT collect:</h3>
+    <p>• We do not require registration, so we don't collect names, emails, phone numbers, or social media accounts.<br>
+    • We do not record, store, or have access to your video or audio streams. All video/audio is transmitted directly between users via WebRTC peer-to-peer technology and never passes through our servers.<br>
+    • We do not use cookies for advertising or tracking.</p>
+
+    <h2>2. How We Use Your Information</h2>
+    <p>• <strong>Matching</strong> — To pair you with other users, optionally based on shared interests.<br>
+    • <strong>Moderation</strong> — To detect and prevent hate speech, harassment, and other rule violations through automated text filtering.<br>
+    • <strong>Ban enforcement</strong> — To prevent banned users from reconnecting using their IP address.<br>
+    • <strong>Service improvement</strong> — Aggregated, anonymous usage statistics to improve performance and features.<br>
+    • <strong>Payment processing</strong> — If you make an unban payment, Stripe processes your payment information. We do not see or store your card details.</p>
+
+    <h2>3. Data Sharing</h2>
+    <p>We do not sell, rent, or trade your personal information to third parties. We may share data only in the following cases:</p>
+    <p>• <strong>Stripe</strong> — Payment information for unban transactions is processed by Stripe under their privacy policy.<br>
+    • <strong>Law enforcement</strong> — We may disclose information if required by law, or if we believe in good faith that disclosure is necessary to protect safety, prevent illegal activity, or respond to a legal request.<br>
+    • <strong>Abuse prevention</strong> — IP-based ban data may be shared with other platforms to combat serious abuse (e.g., child exploitation).</p>
+
+    <h2>4. Data Retention</h2>
+    <p>• <strong>Chat messages</strong> — Not stored after the session ends.<br>
+    • <strong>IP addresses</strong> — Stored only for banned users, partially masked, for the duration of the ban.<br>
+    • <strong>Report logs</strong> — Retained for up to 12 months for moderation review.<br>
+    • <strong>Payment records</strong> — Retained as required by law and Stripe's policies.</p>
+
+    <h2>5. Video and Audio Privacy</h2>
+    <p>MingleNow uses WebRTC technology, which establishes a direct peer-to-peer connection between users. This means your video and audio streams travel directly between you and the other person — they do not pass through our servers and we have no ability to see, record, or access them. However, be aware that the other user could potentially record their screen. Do not share anything on camera that you would not want recorded.</p>
+
+    <h2>6. Your Rights and Choices</h2>
+    <p>• You can stop using the Service at any time by simply closing the browser.<br>
+    • You can disconnect from any conversation at any time.<br>
+    • You can choose not to enable your camera or microphone (text-only mode).<br>
+    • You can choose not to share any personal information in conversations.<br>
+    • If you are in a jurisdiction with data protection laws (e.g., GDPR, CCPA), you may have additional rights regarding your data. Contact us to exercise these rights.</p>
+
+    <h2>7. Security</h2>
+    <p>We take reasonable measures to protect information from unauthorized access, including encrypted connections (HTTPS/WSS), peer-to-peer video encryption (DTLS-SRTP via WebRTC), and secure payment processing via Stripe. However, no system is perfectly secure, and we cannot guarantee absolute security.</p>
+
+    <h2>8. Children's Privacy</h2>
+    <p>MingleNow is not intended for anyone under 18 years of age. We do not knowingly collect information from minors. If you believe a minor is using the Service, please report them immediately using the in-chat report tool.</p>
+
+    <h2>9. Changes to This Policy</h2>
+    <p>We may update this Privacy Policy from time to time. We will indicate the date of the most recent update at the top of this page. Continued use of the Service after changes constitutes acceptance.</p>
+
+    <h2>10. Contact</h2>
+    <p>If you have questions or concerns about this Privacy Policy or your data, please contact us through the platform.</p>
+  </div>
 </div>
 
 <!-- ════════════ CHAT PAGE ════════════ -->
@@ -604,6 +819,12 @@ function removeInterest(el, val) {
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function showLegalPage(type) {
+  const map = { rules: 'pageRules', terms: 'pageTerms', privacy: 'pagePrivacy' };
+  if (map[type]) showPage(map[type]);
 }
 
 function goHome() {

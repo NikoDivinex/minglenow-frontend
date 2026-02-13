@@ -9,7 +9,7 @@
 <meta property="og:description" content="Random video & text chat with interest matching. Meet people worldwide.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<script src="https://www.paypal.com/sdk/js?client-id=AcPcM3sB90xJ0O0XPfJWkEfLYUVhHa4lrl-Oknk82gEdF5_X7Xw5scK0bl-Msh6F-JCKSm-TZ0gjSkYW&currency=USD&disable-funding=credit,card" data-sdk-integration-source="button-factory"></script>
+<script src="https://www.paypal.com/sdk/js?client-id=test&currency=USD&disable-funding=credit,card" data-sdk-integration-source="button-factory"></script>
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -393,6 +393,83 @@
     .legal-content { padding:16px 20px 60px; }
     .legal-content h1 { font-size:1.7rem; }
   }
+
+  /* ═══ GIFT SYSTEM ═══ */
+  .coin-display { display:flex; align-items:center; gap:5px; background:linear-gradient(135deg,#f39c12,#f1c40f); padding:4px 12px; border-radius:100px; font-weight:700; font-size:0.8rem; color:#000; cursor:pointer; transition:transform 0.2s; }
+  .coin-display:hover { transform:scale(1.05); }
+  .coin-display .coin-icon { font-size:0.9rem; }
+  .gift-btn { background:linear-gradient(135deg,#e84393,#fd79a8) !important; position:relative; }
+  .gift-btn.has-coins::after { content:''; position:absolute; top:-2px; right:-2px; width:8px; height:8px; background:#f1c40f; border-radius:50%; }
+
+  .gift-tray {
+    display:none; position:absolute; bottom:70px; left:50%; transform:translateX(-50%);
+    background:var(--surface); border:1px solid var(--border); border-radius:16px;
+    padding:12px; z-index:60; width:320px; max-width:90vw;
+    box-shadow:0 8px 40px rgba(0,0,0,0.5); animation:slideUp 0.3s ease;
+  }
+  .gift-tray.active { display:block; }
+  .gift-tray-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:0 4px; }
+  .gift-tray-header span { font-size:0.85rem; font-weight:700; }
+  .gift-tray-close { background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:1.1rem; }
+  .gift-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .gift-item {
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    padding:10px 4px; border-radius:12px; background:var(--surface-2);
+    border:1px solid var(--border); cursor:pointer; transition:all 0.2s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .gift-item:hover { border-color:var(--accent); background:rgba(108,92,231,0.1); }
+  .gift-item:active { transform:scale(0.92); }
+  .gift-item .gift-emoji { font-size:1.5rem; }
+  .gift-item .gift-name { font-size:0.6rem; color:var(--text-dim); }
+  .gift-item .gift-cost { font-size:0.65rem; font-weight:700; color:#f1c40f; }
+  .gift-tray-buy { display:block; width:100%; margin-top:10px; padding:8px; background:linear-gradient(135deg,#f39c12,#f1c40f); border:none; border-radius:10px; color:#000; font-family:'Outfit',sans-serif; font-weight:700; font-size:0.8rem; cursor:pointer; }
+  .gift-tray-buy:hover { opacity:0.9; }
+
+  /* Floating gift animation */
+  .gift-float {
+    position:fixed; z-index:200; pointer-events:none;
+    animation:giftFloat 3s ease-out forwards;
+    text-align:center;
+  }
+  .gift-float .gf-emoji { font-size:3rem; animation:giftPop 0.4s ease; }
+  .gift-float .gf-label { font-size:0.7rem; font-weight:700; color:#fff; text-shadow:0 2px 8px rgba(0,0,0,0.6); white-space:nowrap; }
+  @keyframes giftFloat {
+    0% { opacity:1; transform:translateY(0) scale(1); }
+    20% { transform:translateY(-40px) scale(1.2); }
+    100% { opacity:0; transform:translateY(-200px) scale(0.6); }
+  }
+  @keyframes giftPop {
+    0% { transform:scale(0); } 50% { transform:scale(1.4); } 100% { transform:scale(1); }
+  }
+
+  /* Coin Shop Modal */
+  .coin-shop-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px);
+    z-index:200; display:none; align-items:center; justify-content:center; padding:20px;
+  }
+  .coin-shop-overlay.active { display:flex; }
+  .coin-shop {
+    background:var(--surface); border:1px solid var(--border); border-radius:20px;
+    padding:28px 24px; max-width:380px; width:100%; animation:slideUp 0.3s ease;
+  }
+  .coin-shop h3 { font-size:1.2rem; font-weight:800; text-align:center; margin-bottom:4px; }
+  .coin-shop .shop-sub { font-size:0.8rem; color:var(--text-dim); text-align:center; margin-bottom:20px; }
+  .coin-shop .shop-balance { text-align:center; margin-bottom:16px; font-size:0.85rem; color:var(--text-dim); }
+  .coin-shop .shop-balance strong { color:#f1c40f; font-size:1.1rem; }
+  .coin-pack {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 16px; background:var(--surface-2); border:1px solid var(--border);
+    border-radius:12px; margin-bottom:8px; cursor:pointer; transition:all 0.2s;
+  }
+  .coin-pack:hover { border-color:#f1c40f; background:rgba(241,196,15,0.05); }
+  .coin-pack .pack-coins { font-weight:800; font-size:1rem; color:#f1c40f; }
+  .coin-pack .pack-price { font-size:0.85rem; font-weight:700; color:var(--text); }
+  .coin-pack .pack-bonus { font-size:0.65rem; color:var(--green); font-weight:600; }
+  .coin-shop-close { display:block; width:100%; text-align:center; background:none; border:none; color:var(--text-dim); font-family:'Outfit',sans-serif; font-size:0.85rem; cursor:pointer; margin-top:12px; padding:8px; }
+  .coin-shop-close:hover { color:var(--text); }
+  #coinShopPaypal { min-height:40px; margin-top:12px; }
+  .selected-pack { border-color:#f1c40f !important; background:rgba(241,196,15,0.1) !important; }
 
   /* ═══ ADMIN PANEL ═══ */
   .admin-login { max-width:380px; margin:80px auto; padding:40px 32px; background:var(--surface); border:1px solid var(--border); border-radius:20px; text-align:center; }
@@ -805,8 +882,11 @@
       <span class="status-indicator searching" id="statusDot"></span>
       <span id="statusText">Connecting...</span>
     </div>
-    <div class="online-badge" style="font-size:0.8rem;padding:6px 12px">
-      <span class="online-dot"></span><span id="onlineCount2">0</span>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="coin-display" onclick="openCoinShop()" title="Buy M Coins"><span class="coin-icon">🪙</span><span id="coinBalance">0</span></div>
+      <div class="online-badge" style="font-size:0.8rem;padding:6px 12px">
+        <span class="online-dot"></span><span id="onlineCount2">0</span>
+      </div>
     </div>
   </div>
 
@@ -824,12 +904,23 @@
           <div class="vid-placeholder" id="remotePlaceholder"><div class="vid-placeholder-icon">👤</div><div id="remotePlaceholderText">Searching...</div></div>
         </div>
       </div>
-      <div class="controls-bar">
+      <div class="controls-bar" style="position:relative">
         <button class="ctrl-btn on" id="btnMic" onclick="toggleMic()" title="Microphone">🎤</button>
         <button class="ctrl-btn on" id="btnCam" onclick="toggleCam()" title="Camera">📷</button>
+        <button class="ctrl-btn gift-btn" onclick="toggleGiftTray()" title="Send Gift" id="btnGift">🎁</button>
         <button class="ctrl-btn end" onclick="goHome()" title="Stop">✕</button>
         <button class="ctrl-btn next" onclick="skipNext()" title="Next">⏭ Next</button>
         <button class="ctrl-btn" onclick="openReport()" title="Report" style="font-size:0.9rem">🚩</button>
+
+        <!-- Gift Tray -->
+        <div class="gift-tray" id="giftTray">
+          <div class="gift-tray-header">
+            <span>🎁 Send a Gift</span>
+            <span style="color:#f1c40f;font-size:0.8rem;font-weight:700">🪙 <span id="giftTrayBalance">0</span></span>
+          </div>
+          <div class="gift-grid" id="giftGrid"></div>
+          <button class="gift-tray-buy" onclick="openCoinShop()">🪙 Get More M Coins</button>
+        </div>
       </div>
     </div>
 
@@ -860,6 +951,18 @@
     <button class="report-option" onclick="submitReport('Spam')">Spam</button>
     <button class="report-option" onclick="submitReport('Underage user')">Underage user</button>
     <button class="report-cancel" onclick="closeReport()">Cancel</button>
+  </div>
+</div>
+
+<!-- Coin Shop Modal -->
+<div class="coin-shop-overlay" id="coinShopOverlay">
+  <div class="coin-shop">
+    <h3>🪙 M Coins Shop</h3>
+    <p class="shop-sub">Buy coins to send gifts during chats!</p>
+    <div class="shop-balance">Your balance: <strong id="shopBalance">0</strong> M Coins</div>
+    <div id="coinPackages"></div>
+    <div id="coinShopPaypal"></div>
+    <button class="coin-shop-close" onclick="closeCoinShop()">Close</button>
   </div>
 </div>
 
@@ -1039,6 +1142,7 @@ async function handleSignalingMessage(msg) {
     case 'welcome':
       myId = msg.id;
       updateOnlineCount(msg.online);
+      if (msg.coins !== undefined) updateCoinDisplay(msg.coins);
       break;
 
     case 'online_count':
@@ -1113,6 +1217,23 @@ async function handleSignalingMessage(msg) {
 
     case 'report_confirmed':
       addSystemMessage('✅ Report submitted. The stranger has been disconnected.');
+      break;
+
+    case 'gift_received':
+      showGiftAnimation(msg.emoji, msg.name, 'received');
+      break;
+
+    case 'gift_sent':
+      showGiftAnimation(msg.emoji, msg.name, 'sent');
+      updateCoinDisplay(msg.balance);
+      break;
+
+    case 'gift_error':
+      addSystemMessage(`❌ ${msg.message}`);
+      break;
+
+    case 'coins_updated':
+      updateCoinDisplay(msg.balance);
       break;
 
     case 'banned':
@@ -1362,6 +1483,175 @@ function notifyMobileChat() {
     sidebar.style.transform = '';
   });
 })();
+
+// ══════════════════════════════════════════
+// M COINS & GIFT SYSTEM
+// ══════════════════════════════════════════
+let myCoins = 0;
+let giftCatalog = {};
+let coinPackages = {};
+let selectedPack = null;
+
+function updateCoinDisplay(amount) {
+  myCoins = amount;
+  const el = document.getElementById('coinBalance');
+  const el2 = document.getElementById('giftTrayBalance');
+  const el3 = document.getElementById('shopBalance');
+  if (el) el.textContent = myCoins;
+  if (el2) el2.textContent = myCoins;
+  if (el3) el3.textContent = myCoins;
+}
+
+// Load gift catalog from server
+async function loadGiftCatalog() {
+  try {
+    const res = await fetch(`${SERVER_HTTP}/coins/catalog`);
+    const data = await res.json();
+    giftCatalog = data.gifts || {};
+    coinPackages = data.packages || {};
+    renderGiftGrid();
+    renderCoinPackages();
+  } catch (e) {
+    // Fallback catalog
+    giftCatalog = {
+      rose: { name:'Rose', emoji:'🌹', cost:5 }, heart: { name:'Heart', emoji:'❤️', cost:10 },
+      fire: { name:'Fire', emoji:'🔥', cost:15 }, star: { name:'Star', emoji:'⭐', cost:25 },
+      crown: { name:'Crown', emoji:'👑', cost:50 }, diamond: { name:'Diamond', emoji:'💎', cost:100 },
+      rocket: { name:'Rocket', emoji:'🚀', cost:200 }, galaxy: { name:'Galaxy', emoji:'🌌', cost:500 },
+    };
+    renderGiftGrid();
+  }
+}
+
+function renderGiftGrid() {
+  const grid = document.getElementById('giftGrid');
+  if (!grid) return;
+  grid.innerHTML = Object.entries(giftCatalog).map(([id, g]) =>
+    `<div class="gift-item" onclick="sendGift('${id}')">
+      <div class="gift-emoji">${g.emoji}</div>
+      <div class="gift-name">${g.name}</div>
+      <div class="gift-cost">🪙 ${g.cost}</div>
+    </div>`
+  ).join('');
+}
+
+function renderCoinPackages() {
+  const el = document.getElementById('coinPackages');
+  if (!el) return;
+  const bonuses = { pack1:'', pack2:'20% bonus', pack3:'50% bonus', pack4:'100% bonus' };
+  el.innerHTML = Object.entries(coinPackages).map(([id, p]) =>
+    `<div class="coin-pack" id="pack-${id}" onclick="selectPack('${id}')">
+      <div><div class="pack-coins">🪙 ${p.label}</div>${bonuses[id] ? `<div class="pack-bonus">${bonuses[id]}</div>` : ''}</div>
+      <div class="pack-price">$${p.price}</div>
+    </div>`
+  ).join('');
+}
+
+function toggleGiftTray() {
+  const tray = document.getElementById('giftTray');
+  tray.classList.toggle('active');
+  if (tray.classList.contains('active')) updateCoinDisplay(myCoins);
+}
+
+function sendGift(giftId) {
+  const gift = giftCatalog[giftId];
+  if (!gift) return;
+  if (myCoins < gift.cost) {
+    document.getElementById('giftTray').classList.remove('active');
+    openCoinShop();
+    return;
+  }
+  if (!isConnected) return;
+  wsSend({ type: 'send_gift', giftId });
+  document.getElementById('giftTray').classList.remove('active');
+}
+
+function showGiftAnimation(emoji, name, direction) {
+  const el = document.createElement('div');
+  el.className = 'gift-float';
+  el.innerHTML = `<div class="gf-emoji">${emoji}</div><div class="gf-label">${direction === 'received' ? 'Stranger sent' : 'You sent'} ${name}!</div>`;
+
+  // Position randomly in the video area
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  el.style.left = (Math.random() * (vw * 0.6) + vw * 0.2) + 'px';
+  el.style.bottom = '140px';
+
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+
+  // Also show in chat
+  if (direction === 'received') {
+    addSystemMessage(`🎁 Stranger sent you a ${emoji} ${name}!`);
+  } else {
+    addSystemMessage(`🎁 You sent a ${emoji} ${name}!`);
+  }
+}
+
+// Coin Shop
+function openCoinShop() {
+  document.getElementById('giftTray')?.classList.remove('active');
+  updateCoinDisplay(myCoins);
+  selectedPack = null;
+  document.querySelectorAll('.coin-pack').forEach(p => p.classList.remove('selected-pack'));
+  document.getElementById('coinShopPaypal').innerHTML = '';
+  document.getElementById('coinShopOverlay').classList.add('active');
+}
+
+function closeCoinShop() {
+  document.getElementById('coinShopOverlay').classList.remove('active');
+  selectedPack = null;
+}
+
+function selectPack(packId) {
+  selectedPack = packId;
+  document.querySelectorAll('.coin-pack').forEach(p => p.classList.remove('selected-pack'));
+  document.getElementById(`pack-${packId}`)?.classList.add('selected-pack');
+
+  // Render PayPal button for this package
+  const container = document.getElementById('coinShopPaypal');
+  container.innerHTML = '';
+
+  if (typeof paypal !== 'undefined') {
+    paypal.Buttons({
+      style: { layout:'horizontal', color:'gold', shape:'rect', label:'pay', height:35, tagline:false },
+      createOrder: function() {
+        return fetch(`${SERVER_HTTP}/coins/create-order`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ packageId: selectedPack }),
+        }).then(r => r.json()).then(data => {
+          if (data.error) { alert(data.message || data.error); throw new Error(data.error); }
+          return data.orderId;
+        });
+      },
+      onApprove: function(data) {
+        return fetch(`${SERVER_HTTP}/coins/capture-order`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: data.orderID }),
+        }).then(r => r.json()).then(result => {
+          if (result.success) {
+            updateCoinDisplay(result.balance);
+            closeCoinShop();
+            // Show success toast
+            const toast = document.createElement('div');
+            toast.className = 'warning-toast';
+            toast.style.background = 'linear-gradient(135deg,#f39c12,#f1c40f)';
+            toast.style.color = '#000';
+            toast.textContent = `🪙 Coins added! Balance: ${result.balance}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+          }
+        });
+      },
+      onError: function() { alert('Payment error. Please try again.'); },
+    }).render('#coinShopPaypal');
+  }
+}
+
+// Load catalog on page load
+loadGiftCatalog();
 
 // ══════════════════════════════════════════
 // ADMIN PANEL

@@ -363,6 +363,54 @@
     .ctrl-btn { width:36px; height:36px; font-size:0.85rem; }
     .chat-nav { padding:4px 12px; }
   }
+  /* ═══ BAN SCREEN ═══ */
+  .ban-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,0.85);
+    backdrop-filter:blur(12px); z-index:300;
+    display:none; align-items:center; justify-content:center;
+    padding:20px;
+  }
+  .ban-overlay.active { display:flex; }
+  .ban-box {
+    background:var(--surface); border:1px solid rgba(232,67,147,0.3);
+    border-radius:24px; padding:40px 32px; max-width:440px; width:100%;
+    text-align:center; animation:slideUp 0.4s ease;
+  }
+  .ban-icon { font-size:3.5rem; margin-bottom:16px; }
+  .ban-box h2 { font-size:1.5rem; font-weight:800; margin-bottom:8px; color:#e84393; }
+  .ban-box .ban-reason {
+    font-size:0.9rem; color:var(--text-dim); margin-bottom:24px;
+    background:var(--surface-2); padding:12px 16px; border-radius:10px;
+    line-height:1.5;
+  }
+  .ban-box .ban-message {
+    font-size:0.85rem; color:var(--text-dim); margin-bottom:28px; line-height:1.6;
+  }
+  .unban-btn {
+    display:inline-flex; align-items:center; gap:8px;
+    background:linear-gradient(135deg,var(--accent),#e84393);
+    border:none; color:#fff; padding:14px 32px;
+    border-radius:12px; font-family:'Outfit',sans-serif;
+    font-size:1rem; font-weight:700; cursor:pointer;
+    transition:transform 0.2s, box-shadow 0.2s;
+    box-shadow:0 4px 20px rgba(108,92,231,0.3);
+  }
+  .unban-btn:hover { transform:translateY(-2px); box-shadow:0 8px 30px rgba(108,92,231,0.4); }
+  .unban-btn:active { transform:scale(0.97); }
+  .unban-price { font-size:0.75rem; opacity:0.8; margin-top:8px; }
+
+  /* Warning toast */
+  .warning-toast {
+    position:fixed; top:20px; left:50%; transform:translateX(-50%);
+    background:linear-gradient(135deg,#e84393,#fd79a8);
+    color:#fff; padding:14px 24px; border-radius:14px;
+    font-size:0.85rem; font-weight:600; z-index:250;
+    box-shadow:0 8px 30px rgba(232,67,147,0.4);
+    animation:toastIn 0.4s ease, toastOut 0.4s ease 4.6s forwards;
+    max-width:90%; text-align:center; line-height:1.4;
+  }
+  @keyframes toastIn { from{transform:translateX(-50%) translateY(-30px);opacity:0} to{transform:translateX(-50%) translateY(0);opacity:1} }
+  @keyframes toastOut { to{transform:translateX(-50%) translateY(-30px);opacity:0} }
 </style>
 </head>
 <body>
@@ -478,6 +526,23 @@
     <button class="report-option" onclick="submitReport('Spam')">Spam</button>
     <button class="report-option" onclick="submitReport('Underage user')">Underage user</button>
     <button class="report-cancel" onclick="closeReport()">Cancel</button>
+  </div>
+</div>
+
+<!-- Ban Screen -->
+<div class="ban-overlay" id="banOverlay">
+  <div class="ban-box">
+    <div class="ban-icon">🚫</div>
+    <h2>You've Been Banned</h2>
+    <div class="ban-reason" id="banReason">Violation of community guidelines</div>
+    <div class="ban-message">
+      Your access to MingleNow has been suspended for violating our community rules.
+      This includes hate speech, nudity, harassment, or other prohibited behavior.
+    </div>
+    <button class="unban-btn" onclick="requestUnban()">
+      🔓 Get Unbanned — $7.99
+    </button>
+    <div class="unban-price">One-time payment to restore your access</div>
   </div>
 </div>
 
@@ -706,6 +771,15 @@ async function handleSignalingMessage(msg) {
 
     case 'report_confirmed':
       addSystemMessage('✅ Report submitted. The stranger has been disconnected.');
+      break;
+
+    case 'banned':
+      showBanScreen(msg.reason);
+      cleanup();
+      break;
+
+    case 'warning':
+      showWarningToast(msg.message);
       break;
 
     case 'ping':
@@ -972,6 +1046,94 @@ function cleanup() {
 
 // Handle page unload
 window.addEventListener('beforeunload', cleanup);
+
+// ══════════════════════════════════════════
+// BAN SCREEN
+// ══════════════════════════════════════════
+const SERVER_HTTP = SIGNALING_SERVER.replace('wss://', 'https://').replace('ws://', 'http://');
+
+function showBanScreen(reason) {
+  document.getElementById('banReason').textContent = reason || 'Violation of community guidelines';
+  document.getElementById('banOverlay').classList.add('active');
+  showPage('pageLanding');
+}
+
+function hideBanScreen() {
+  document.getElementById('banOverlay').classList.remove('active');
+}
+
+async function requestUnban() {
+  const btn = document.querySelector('.unban-btn');
+  btn.textContent = '⏳ Processing...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${SERVER_HTTP}/create-unban-session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await res.json();
+
+    if (data.url) {
+      // Redirect to Stripe checkout
+      window.location.href = data.url;
+    } else if (data.error === 'Stripe not configured') {
+      alert('Payment system is not set up yet. Contact the site admin.\n\nTo set up payments, add STRIPE_SECRET_KEY to your Railway environment variables.');
+      btn.textContent = '🔓 Get Unbanned — $7.99';
+      btn.disabled = false;
+    } else {
+      alert(data.error || 'Something went wrong');
+      btn.textContent = '🔓 Get Unbanned — $7.99';
+      btn.disabled = false;
+    }
+  } catch (e) {
+    alert('Could not connect to payment server. Please try again.');
+    btn.textContent = '🔓 Get Unbanned — $7.99';
+    btn.disabled = false;
+  }
+}
+
+// ══════════════════════════════════════════
+// WARNING TOAST
+// ══════════════════════════════════════════
+function showWarningToast(message) {
+  // Remove any existing toast
+  const existing = document.querySelector('.warning-toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.className = 'warning-toast';
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  // Also show in chat
+  addSystemMessage(message);
+
+  setTimeout(() => toast.remove(), 5000);
+}
+
+// ══════════════════════════════════════════
+// CHECK BAN ON PAGE LOAD
+// ══════════════════════════════════════════
+(async function checkBanOnLoad() {
+  // Check if user just paid for unban
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('unbanned') === 'true') {
+    // Clean URL
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+
+  try {
+    const res = await fetch(`${SERVER_HTTP}/check-ban`);
+    const data = await res.json();
+    if (data.banned) {
+      showBanScreen(data.reason);
+    }
+  } catch (e) {
+    // Server not reachable, don't block the page
+    console.log('Could not check ban status');
+  }
+})();
 </script>
 </body>
 </html>

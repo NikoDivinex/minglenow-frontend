@@ -686,6 +686,10 @@
   <section class="hero">
     <h1>Chat with<br>Strangers</h1>
     <p>Meet someone new in seconds. Random video or text chats — simple, fast, and anonymous. Ready to start mingling?</p>
+    <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+      <div class="coin-display" onclick="openCoinShop()" title="Buy M Coins" style="padding:8px 16px;font-size:0.9rem;cursor:pointer"><span class="coin-icon">🪙</span><span id="coinBalanceLanding">0</span> M Coins</div>
+      <div class="coin-display" onclick="openPerksShop()" title="Perks Shop" style="background:linear-gradient(135deg,var(--accent),#e84393);color:#fff;padding:8px 16px;font-size:0.9rem;cursor:pointer">✨ Perks Shop</div>
+    </div>
     <div class="mode-cards">
       <a class="mode-card" onclick="startChat('video')">
         <div class="mode-card-icon">🎥</div><div class="mode-card-title">Video Chat</div><div class="mode-card-sub">Face-to-face with camera & mic</div>
@@ -1897,6 +1901,9 @@ function doReconnect() {
 loadPerksCatalog();
 loadMyPerks();
 
+// Also fetch balance for landing page display
+fetch(`${SERVER_HTTP}/coins/balance`).then(r => r.json()).then(d => { if (d.balance !== undefined) updateCoinDisplay(d.balance); }).catch(() => {});
+
 // ══════════════════════════════════════════
 // M COINS & GIFT SYSTEM
 // ══════════════════════════════════════════
@@ -1907,12 +1914,8 @@ let selectedPack = null;
 
 function updateCoinDisplay(amount) {
   myCoins = amount;
-  const el = document.getElementById('coinBalance');
-  const el2 = document.getElementById('giftTrayBalance');
-  const el3 = document.getElementById('shopBalance');
-  if (el) el.textContent = myCoins;
-  if (el2) el2.textContent = myCoins;
-  if (el3) el3.textContent = myCoins;
+  const ids = ['coinBalance', 'giftTrayBalance', 'shopBalance', 'coinBalanceLanding', 'perksBalance'];
+  ids.forEach(id => { const el = document.getElementById(id); if (el) el.textContent = myCoins; });
 }
 
 // Load gift catalog from server

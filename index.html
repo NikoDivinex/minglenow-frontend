@@ -1042,26 +1042,27 @@
       <div class="stat-card red"><div class="stat-num" id="aBanned">-</div><div class="stat-label">Banned</div></div>
       <div class="stat-card"><div class="stat-num" id="aUnbans">-</div><div class="stat-label">Paid Unbans</div></div>
       <div class="stat-card green"><div class="stat-num" id="aRevenue">-</div><div class="stat-label">Revenue</div></div>
+      <div class="stat-card"><div class="stat-num" id="aAccounts">-</div><div class="stat-label">Accounts</div></div>
     </div>
 
     <!-- Quick Actions -->
     <div class="admin-section">
       <h3>⚡ Quick Actions</h3>
       <div class="admin-action-row">
-        <input type="text" id="banIPInput" placeholder="Enter IP address to ban">
+        <input type="text" id="banIPInput" placeholder="IP address or username to ban">
         <input type="text" id="banReasonInput" placeholder="Reason (optional)">
-        <button style="background:var(--red);color:#fff" onclick="adminBanIP()">🚫 Ban IP</button>
+        <button style="background:var(--red);color:#fff" onclick="adminBanIP()">🚫 Ban</button>
       </div>
       <div class="admin-action-row">
-        <input type="text" id="unbanIPInput" placeholder="Enter IP address to unban">
-        <button style="background:var(--green);color:#000" onclick="adminUnbanIP()">✅ Unban IP</button>
+        <input type="text" id="unbanIPInput" placeholder="IP address to unban">
+        <button style="background:var(--green);color:#000" onclick="adminUnbanIP()">✅ Unban</button>
       </div>
       <div class="admin-action-row">
         <input type="text" id="broadcastInput" placeholder="Type a broadcast message for all users...">
         <button style="background:var(--accent);color:#fff" onclick="adminBroadcast()">📢 Broadcast</button>
       </div>
       <div class="admin-action-row">
-        <input type="text" id="giveCoinsIP" placeholder="Enter IP address">
+        <input type="text" id="giveCoinsTarget" placeholder="Username or coinKey">
         <input type="number" id="giveCoinsAmount" placeholder="Amount" min="1" style="max-width:120px">
         <button style="background:linear-gradient(135deg,#f39c12,#f1c40f);color:#000" onclick="adminGiveCoins()">🪙 Give Coins</button>
       </div>
@@ -1071,6 +1072,12 @@
     <div class="admin-section">
       <h3>👥 Online Users <button class="admin-refresh" onclick="adminLoadStats()" style="margin-left:auto">Refresh</button></h3>
       <div id="adminUsersTable"><div class="empty-msg">Loading...</div></div>
+    </div>
+
+    <!-- Registered Accounts -->
+    <div class="admin-section">
+      <h3>📋 Registered Accounts <span id="aAccounts" style="font-weight:400;color:var(--text-dim)"></span></h3>
+      <div id="adminAccountsTable"><div class="empty-msg">Loading...</div></div>
     </div>
 
     <!-- Ban Log -->
@@ -2688,6 +2695,7 @@ async function adminLoadStats() {
   document.getElementById('aBanned').textContent = stats.totalBans;
   document.getElementById('aUnbans').textContent = stats.totalUnbans;
   document.getElementById('aRevenue').textContent = `$${stats.revenue.toFixed(2)}`;
+  document.querySelectorAll('#aAccounts').forEach(el => el.textContent = stats.totalAccounts || 0);
 
   // Online users table
   const usersDiv = document.getElementById('adminUsersTable');
@@ -2695,16 +2703,42 @@ async function adminLoadStats() {
     usersDiv.innerHTML = '<div class="empty-msg">No users online</div>';
   } else {
     usersDiv.innerHTML = `<table class="admin-table">
-      <tr><th>Username</th><th>IP</th><th>Coins</th><th>Status</th><th>Actions</th></tr>
-      ${stats.onlineUsers.map(u => `<tr>
-        <td><strong>${u.username || 'Anonymous'}</strong></td>
-        <td class="ip">${u.ip}</td>
+      <tr><th>Username</th><th>Type</th><th>Coins</th><th>Status</th><th>Actions</th></tr>
+      ${stats.onlineUsers.map(u => {
+        const typeLabel = u.signedIn
+          ? '<span class="admin-badge paid" title="Google account">🔵 Google</span>'
+          : '<span class="admin-badge online">🕶️ Guest</span>';
+        return `<tr>
+        <td><strong>${u.username || 'Stranger'}</strong><br><span style="font-size:0.65rem;color:var(--text-dim)">${u.ip}</span></td>
+        <td>${typeLabel}</td>
         <td style="color:#f1c40f;font-weight:700">🪙 ${u.coins || 0}</td>
         <td>${u.hasPartner ? '<span class="admin-badge paired">Chatting</span>' : '<span class="admin-badge online">Waiting</span>'}</td>
         <td style="display:flex;gap:4px;flex-wrap:wrap">
           <button class="admin-action-btn kick" onclick="adminKick('${u.id}')">Kick</button>
           <button class="admin-action-btn ban" onclick="adminBanUser('${u.fullIP}','${u.username || u.id}')">Ban</button>
-          <button class="admin-action-btn unban" onclick="adminGiveCoinsTo('${u.fullIP}')">+Coins</button>
+          <button class="admin-action-btn unban" onclick="adminGiveCoinsTo('${u.coinKey}','${u.username || 'user'}')">+Coins</button>
+        </td>
+      </tr>`;}).join('')}
+    </table>`;
+  }
+
+  // Registered accounts table
+  const accDiv = document.getElementById('adminAccountsTable');
+  if (!stats.registeredAccounts || stats.registeredAccounts.length === 0) {
+    accDiv.innerHTML = '<div class="empty-msg">No registered accounts</div>';
+  } else {
+    const countryFlags = {US:'🇺🇸',GB:'🇬🇧',CA:'🇨🇦',AU:'🇦🇺',DE:'🇩🇪',FR:'🇫🇷',BR:'🇧🇷',IN:'🇮🇳',JP:'🇯🇵',KR:'🇰🇷',MX:'🇲🇽',ES:'🇪🇸',IT:'🇮🇹',PH:'🇵🇭',TR:'🇹🇷',SA:'🇸🇦',EG:'🇪🇬',NG:'🇳🇬',AE:'🇦🇪',OTHER:'🌍'};
+    accDiv.innerHTML = `<table class="admin-table">
+      <tr><th>Username</th><th>Email</th><th>Gender</th><th>Country</th><th>Coins</th><th>Actions</th></tr>
+      ${stats.registeredAccounts.map(a => `<tr>
+        <td><strong>${a.username}</strong></td>
+        <td style="font-size:0.7rem;color:var(--text-dim)">${a.email || '-'}</td>
+        <td>${a.gender || '-'}</td>
+        <td>${(countryFlags[a.country] || '') + ' ' + (a.country || '-')}</td>
+        <td style="color:#f1c40f;font-weight:700">🪙 ${a.coins || 0}</td>
+        <td style="display:flex;gap:4px;flex-wrap:wrap">
+          <button class="admin-action-btn unban" onclick="adminGiveCoinsTo('g:${a.googleId}','${a.username}')">+Coins</button>
+          <button class="admin-action-btn ban" onclick="adminBanUser('','${a.username}')">Ban</button>
         </td>
       </tr>`).join('')}
     </table>`;
@@ -2713,19 +2747,25 @@ async function adminLoadStats() {
   // Bans table
   const bansData = await adminFetch('/admin/bans');
   const bansDiv = document.getElementById('adminBansTable');
-  if (!bansData || bansData.bans.length === 0) {
+  const allBans = [...(bansData?.bans || []), ...(bansData?.googleBans || [])];
+  if (!allBans.length) {
     bansDiv.innerHTML = '<div class="empty-msg">No bans yet</div>';
   } else {
     bansDiv.innerHTML = `<table class="admin-table">
-      <tr><th>Username</th><th>IP</th><th>Reason</th><th>Date</th><th>Status</th><th>Actions</th></tr>
-      ${bansData.bans.map(b => `<tr>
+      <tr><th>Username</th><th>Type</th><th>Target</th><th>Reason</th><th>Date</th><th>Status</th><th>Actions</th></tr>
+      ${allBans.map(b => {
+        const isGoogle = b.type === 'google';
+        const typeLabel = isGoogle ? '🔵 Account' : '🌐 IP';
+        const target = isGoogle ? b.googleId?.slice(0, 10) + '...' : b.ip;
+        return `<tr>
         <td><strong>${b.username || '-'}</strong></td>
-        <td class="ip">${b.ip}</td>
+        <td style="font-size:0.7rem">${typeLabel}</td>
+        <td class="ip" style="font-size:0.65rem">${target}</td>
         <td>${b.reason}</td>
         <td>${new Date(b.timestamp).toLocaleDateString()}</td>
         <td>${b.paid ? '<span class="admin-badge paid">Unbanned</span>' : '<span class="admin-badge active">Banned</span>'}</td>
-        <td>${!b.paid ? `<button class="admin-action-btn unban" onclick="adminUnbanDirect('${b.fullIP}')">Unban</button>` : '-'}</td>
-      </tr>`).join('')}
+        <td>${!b.paid ? `<button class="admin-action-btn unban" onclick="adminUnbanDirect('${isGoogle ? '' : b.fullIP}','${isGoogle ? b.googleId : ''}')">Unban</button>` : '-'}</td>
+      </tr>`;}).join('')}
     </table>`;
   }
 }
@@ -2733,25 +2773,42 @@ async function adminLoadStats() {
 function adminBanUser(ip, username) {
   const reason = prompt(`Ban ${username}? Enter reason:`, 'Banned by admin');
   if (reason !== null) {
-    adminFetch('/admin/ban', 'POST', { ip, reason: reason || 'Banned by admin' }).then(() => adminLoadStats());
+    const payload = { reason: reason || 'Banned by admin' };
+    if (ip) payload.ip = ip;
+    if (username && username !== 'Stranger') payload.username = username;
+    adminFetch('/admin/ban', 'POST', payload).then(() => adminLoadStats());
   }
 }
 
-function adminGiveCoinsTo(ip) {
-  const amount = prompt('How many coins to give?', '100');
+function adminGiveCoinsTo(coinKey, label) {
+  const amount = prompt(`How many coins to give ${label}?`, '100');
   if (amount && parseInt(amount) > 0) {
-    adminFetch('/admin/give-coins', 'POST', { ip, amount: parseInt(amount) }).then(res => {
+    adminFetch('/admin/give-coins', 'POST', { coinKey, amount: parseInt(amount) }).then(res => {
       if (res?.success) alert(`Gave ${amount} coins. New balance: ${res.balance}`);
       adminLoadStats();
     });
   }
 }
 
+function adminUnbanDirect(ip, googleId) {
+  const payload = {};
+  if (ip) payload.ip = ip;
+  if (googleId) payload.googleId = googleId;
+  adminFetch('/admin/unban', 'POST', payload).then(() => adminLoadStats());
+}
+  if (amount && parseInt(amount) > 0) {
+    adminFetch('/admin/give-coins', 'POST', { coinKey, amount: parseInt(amount) }).then(res => {
+      if (res?.success) alert(`Gave ${amount} coins to ${label}. New balance: ${res.balance}`);
+      adminLoadStats();
+    });
+  }
+}
+
 async function adminBanIP() {
-  const ip = document.getElementById('banIPInput').value.trim();
+  const input = document.getElementById('banIPInput').value.trim();
   const reason = document.getElementById('banReasonInput').value.trim();
-  if (!ip) return alert('Enter an IP address');
-  await adminFetch('/admin/ban', 'POST', { ip, reason: reason || 'Banned by admin' });
+  if (!input) return alert('Enter an IP address or username');
+  await adminFetch('/admin/ban', 'POST', { ip: input, reason: reason || 'Banned by admin' });
   document.getElementById('banIPInput').value = '';
   document.getElementById('banReasonInput').value = '';
   adminLoadStats();
@@ -2763,13 +2820,6 @@ async function adminUnbanIP() {
   await adminFetch('/admin/unban', 'POST', { ip });
   document.getElementById('unbanIPInput').value = '';
   adminLoadStats();
-}
-
-async function adminUnbanDirect(ip) {
-  if (confirm('Unban this IP?')) {
-    await adminFetch('/admin/unban', 'POST', { ip });
-    adminLoadStats();
-  }
 }
 
 async function adminKick(userId) {
@@ -2790,17 +2840,20 @@ async function adminBroadcast() {
 }
 
 async function adminGiveCoins() {
-  const ip = document.getElementById('giveCoinsIP').value.trim();
+  const target = document.getElementById('giveCoinsTarget').value.trim();
   const amount = parseInt(document.getElementById('giveCoinsAmount').value);
-  if (!ip) return alert('Enter an IP address');
+  if (!target) return alert('Enter a username or coinKey');
   if (!amount || amount < 1) return alert('Enter a valid coin amount');
-  const res = await adminFetch('/admin/give-coins', 'POST', { ip, amount });
+
+  // Determine if it's a coinKey (starts with g:) or username
+  const body = target.startsWith('g:') ? { coinKey: target, amount } : { username: target, amount };
+  const res = await adminFetch('/admin/give-coins', 'POST', body);
   if (res?.success) {
-    alert(`Gave ${amount} M Coins to ${ip.slice(0,8)}***\nNew balance: ${res.balance}`);
-    document.getElementById('giveCoinsIP').value = '';
+    alert(`Gave ${amount} M Coins to ${target}\nNew balance: ${res.balance}`);
+    document.getElementById('giveCoinsTarget').value = '';
     document.getElementById('giveCoinsAmount').value = '';
   } else {
-    alert(res?.error || 'Failed to give coins');
+    alert(res?.error || 'Failed to give coins. User not found.');
   }
 }
 

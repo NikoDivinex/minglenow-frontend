@@ -2949,9 +2949,11 @@ function showBanScreen(reason) {
       // Create order on server
       createOrder: function() {
         document.getElementById('paypalStatus').textContent = 'Creating order...';
+        const gid = localStorage.getItem('mingleGoogleId') || '';
         return fetch(`${SERVER_HTTP}/create-unban-order`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ googleId: gid }),
         })
         .then(r => r.json())
         .then(data => {
@@ -3025,21 +3027,19 @@ function showWarningToast(message) {
 // CHECK BAN ON PAGE LOAD
 // ══════════════════════════════════════════
 (async function checkBanOnLoad() {
-  // Check if user just paid for unban
   const params = new URLSearchParams(window.location.search);
   if (params.get('unbanned') === 'true') {
-    // Clean URL
     window.history.replaceState({}, '', window.location.pathname);
   }
 
   try {
-    const res = await fetch(`${SERVER_HTTP}/check-ban`);
+    const gid = localStorage.getItem('mingleGoogleId') || '';
+    const res = await fetch(`${SERVER_HTTP}/check-ban?googleId=${gid}`);
     const data = await res.json();
     if (data.banned) {
       showBanScreen(data.reason);
     }
   } catch (e) {
-    // Server not reachable, don't block the page
     console.log('Could not check ban status');
   }
 })();

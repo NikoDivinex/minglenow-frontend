@@ -799,7 +799,7 @@
     <div class="feature"><div class="feature-icon">🔒</div><div class="feature-title">Moderation</div><div class="feature-desc">Report & block to keep the community safe</div></div>
     <div class="feature"><div class="feature-icon">🌍</div><div class="feature-title">Global</div><div class="feature-desc">Connect with people from around the world</div></div>
     <div class="feature"><div class="feature-icon">⚡</div><div class="feature-title">Instant</div><div class="feature-desc">No sign-up needed. Start chatting now</div></div>
-    <div class="feature"><div class="feature-icon">🪙</div><div class="feature-title">M Coins</div><div class="feature-desc">Your coins are tied to your IP address. Buy, earn from gifts, and spend on perks</div></div>
+    <div class="feature"><div class="feature-icon">🪙</div><div class="feature-title">M Coins</div><div class="feature-desc">Sign in with Google to buy coins. Your balance stays in your account forever</div></div>
     <div class="feature"><div class="feature-icon">👤</div><div class="feature-title">Unique Username</div><div class="feature-desc">Sign in with Google to claim a permanent username, add friends, and DM</div></div>
     <div class="feature"><div class="feature-icon">👥</div><div class="feature-title">Friends & DMs</div><div class="feature-desc">Add people you meet as friends and message them anytime</div></div>
     <div class="feature"><div class="feature-icon">🚧</div><div class="feature-title">Under Development</div><div class="feature-desc">We're still building! You may encounter bugs — thanks for your patience</div></div>
@@ -2177,7 +2177,9 @@ async function loadPerksCatalog() {
 
 async function loadMyPerks() {
   try {
-    const res = await fetch(`${SERVER_HTTP}/perks/mine`);
+    const gid = localStorage.getItem('mingleGoogleId');
+    const url = gid ? `${SERVER_HTTP}/perks/mine?googleId=${gid}` : `${SERVER_HTTP}/perks/mine`;
+    const res = await fetch(url);
     const data = await res.json();
     myPerks = data.perks || {};
     updateCoinDisplay(data.balance);
@@ -2263,7 +2265,7 @@ async function buyPerk(type, id) {
     try {
       await fetch(`${SERVER_HTTP}/perks/buy`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, id: 'none' }),
+        body: JSON.stringify({ type, id: 'none', googleId: myGoogleId }),
       });
     } catch(e) {}
     renderPerksShop();
@@ -2274,7 +2276,7 @@ async function buyPerk(type, id) {
   try {
     const res = await fetch(`${SERVER_HTTP}/perks/buy`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, id }),
+      body: JSON.stringify({ type, id, googleId: myGoogleId }),
     });
     const data = await res.json();
     if (data.error === 'Not enough coins') {
@@ -2354,7 +2356,11 @@ loadPerksCatalog();
 loadMyPerks();
 
 // Also fetch balance for landing page display
-fetch(`${SERVER_HTTP}/coins/balance`).then(r => r.json()).then(d => { if (d.balance !== undefined) updateCoinDisplay(d.balance); }).catch(() => {});
+(function fetchBalance() {
+  const gid = localStorage.getItem('mingleGoogleId');
+  const url = gid ? `${SERVER_HTTP}/coins/balance?googleId=${gid}` : `${SERVER_HTTP}/coins/balance`;
+  fetch(url).then(r => r.json()).then(d => { if (d.balance !== undefined) updateCoinDisplay(d.balance); }).catch(() => {});
+})();
 
 // Restore Google session on page load
 (async function restoreSession() {
@@ -2549,6 +2555,10 @@ function showGiftAnimation(emoji, name, direction) {
 
 // Coin Shop
 function openCoinShop() {
+  if (!mySignedIn || !myGoogleId) {
+    alert('Sign in with Google to purchase M Coins!');
+    return;
+  }
   document.getElementById('giftTray')?.classList.remove('active');
   updateCoinDisplay(myCoins);
   selectedPack = null;
@@ -2567,7 +2577,6 @@ function selectPack(packId) {
   document.querySelectorAll('.coin-pack').forEach(p => p.classList.remove('selected-pack'));
   document.getElementById(`pack-${packId}`)?.classList.add('selected-pack');
 
-  // Render PayPal button for this package
   const container = document.getElementById('coinShopPaypal');
   container.innerHTML = '';
 
@@ -2578,9 +2587,9 @@ function selectPack(packId) {
         return fetch(`${SERVER_HTTP}/coins/create-order`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ packageId: selectedPack }),
+          body: JSON.stringify({ packageId: selectedPack, googleId: myGoogleId }),
         }).then(r => r.json()).then(data => {
-          if (data.error) { alert(data.message || data.error); throw new Error(data.error); }
+          if (data.error) { alert(data.error); throw new Error(data.error); }
           return data.orderId;
         });
       },
@@ -2593,7 +2602,6 @@ function selectPack(packId) {
           if (result.success) {
             updateCoinDisplay(result.balance);
             closeCoinShop();
-            // Show success toast
             const toast = document.createElement('div');
             toast.className = 'warning-toast';
             toast.style.background = 'linear-gradient(135deg,#f39c12,#f1c40f)';

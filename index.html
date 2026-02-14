@@ -747,6 +747,51 @@
     .admin-table { font-size:0.7rem; }
   }
 
+  /* ═══ PROFILE DROPDOWN ═══ */
+  .profile-dropdown {
+    position:absolute; top:100%; right:0; margin-top:6px; background:var(--surface);
+    border:1px solid var(--border); border-radius:14px; padding:6px; min-width:180px;
+    box-shadow:0 8px 30px rgba(0,0,0,0.4); z-index:200; display:none;
+    animation:slideUp 0.15s ease;
+  }
+  .profile-dropdown.active { display:block; }
+  .profile-dropdown .pd-item {
+    display:flex; align-items:center; gap:8px; padding:10px 14px; border-radius:10px;
+    font-size:0.8rem; font-weight:600; cursor:pointer; color:var(--text); transition:all 0.15s;
+    font-family:'Outfit',sans-serif; border:none; background:none; width:100%; text-align:left;
+  }
+  .profile-dropdown .pd-item:hover { background:var(--surface-2); }
+  .profile-dropdown .pd-item.danger { color:#e84393; }
+  .profile-dropdown .pd-item.danger:hover { background:rgba(232,67,147,0.1); }
+  .profile-dropdown .pd-sep { height:1px; background:var(--border); margin:4px 8px; }
+
+  /* ═══ PROFILE EDIT OVERLAY ═══ */
+  .profile-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px);
+    z-index:210; display:none; align-items:flex-start; justify-content:center; padding:20px; overflow-y:auto;
+  }
+  .profile-overlay.active { display:flex; }
+  .profile-panel {
+    background:var(--surface); border:1px solid var(--border); border-radius:20px;
+    padding:28px 24px; max-width:420px; width:100%; margin-top:40px; animation:slideUp 0.3s ease;
+  }
+  .profile-panel h3 { font-size:1.2rem; font-weight:800; text-align:center; margin-bottom:4px; }
+  .profile-panel .pp-sub { text-align:center; font-size:0.75rem; color:var(--text-dim); margin-bottom:18px; }
+  .pp-field { margin-bottom:14px; }
+  .pp-label { font-size:0.7rem; font-weight:700; color:var(--text-dim); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px; }
+  .pp-input { width:100%; padding:10px 14px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:'Outfit',sans-serif; font-size:0.85rem; outline:none; resize:none; }
+  .pp-input:focus { border-color:var(--accent); }
+  .pp-input[disabled] { opacity:0.5; cursor:not-allowed; }
+  .pp-uname-row { display:flex; gap:8px; align-items:center; }
+  .pp-uname-row input { flex:1; }
+  .pp-uname-btn { padding:10px 14px; background:linear-gradient(135deg,#f39c12,#f1c40f); border:none; border-radius:10px; color:#000; font-family:'Outfit',sans-serif; font-size:0.7rem; font-weight:700; cursor:pointer; white-space:nowrap; }
+  .pp-uname-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  .pp-note { font-size:0.65rem; color:var(--text-dim); margin-top:4px; }
+  .pp-save-btn { width:100%; padding:12px; background:var(--accent); border:none; border-radius:12px; color:#fff; font-family:'Outfit',sans-serif; font-size:0.9rem; font-weight:700; cursor:pointer; margin-top:6px; }
+  .pp-save-btn:hover { background:#7c6ff0; }
+  .pp-close { display:block; width:100%; text-align:center; background:none; border:none; color:var(--text-dim); font-family:'Outfit',sans-serif; font-size:0.8rem; cursor:pointer; margin-top:10px; padding:8px; }
+  .pp-error { color:#e84393; font-size:0.75rem; margin-top:6px; display:none; text-align:center; }
+
   /* ═══ RULES SCREEN ═══ */
   .rules-overlay {
     position:fixed; inset:0; background:rgba(0,0,0,0.92); backdrop-filter:blur(10px);
@@ -865,7 +910,15 @@
     <div class="logo"><div class="logo-icon">💬</div>MingleNow</div>
     <div style="display:flex;align-items:center;gap:10px">
       <div class="online-badge"><span class="online-dot"></span><span id="onlineCount">0</span> online</div>
-      <div id="authStatusNav" style="font-size:0.75rem;padding:6px 12px;border-radius:20px;background:var(--surface-2);border:1px solid var(--border);cursor:pointer;display:none" onclick="toggleAuthMenu()"></div>
+      <div style="position:relative">
+        <div id="authStatusNav" style="font-size:0.75rem;padding:6px 12px;border-radius:20px;background:var(--surface-2);border:1px solid var(--border);cursor:pointer;display:none" onclick="toggleAuthMenu()"></div>
+        <div class="profile-dropdown" id="profileDropdown">
+          <button class="pd-item" onclick="openProfileEdit()">✏️ Edit Profile</button>
+          <button class="pd-item" onclick="openFriendsList(); closeProfileDropdown()">👥 Friends</button>
+          <div class="pd-sep"></div>
+          <button class="pd-item danger" onclick="signOut(); closeProfileDropdown()">🚪 Sign Out</button>
+        </div>
+      </div>
     </div>
   </nav>
 
@@ -901,6 +954,7 @@
     <div class="feature"><div class="feature-icon">🌍</div><div class="feature-title">Global</div><div class="feature-desc">Connect with people from around the world</div></div>
     <div class="feature"><div class="feature-icon">⚡</div><div class="feature-title">Instant</div><div class="feature-desc">No sign-up needed. Start chatting now</div></div>
     <div class="feature"><div class="feature-icon">🪙</div><div class="feature-title">M Coins</div><div class="feature-desc">Sign in with Google to buy coins. Your balance stays in your account forever</div></div>
+    <div class="feature"><div class="feature-icon">🛍️</div><div class="feature-title">Spend M Coins</div><div class="feature-desc">Send gifts, buy name colors, chat bubbles, entrance effects, region filters, and reconnect with past partners</div></div>
     <div class="feature"><div class="feature-icon">👤</div><div class="feature-title">Unique Username</div><div class="feature-desc">Sign in with Google to claim a permanent username, add friends, and DM</div></div>
     <div class="feature"><div class="feature-icon">👥</div><div class="feature-title">Friends & DMs</div><div class="feature-desc">Add people you meet as friends and message them anytime</div></div>
     <div class="feature"><div class="feature-icon">🚧</div><div class="feature-title">Under Development</div><div class="feature-desc">We're still building! You may encounter bugs — thanks for your patience</div></div>
@@ -1257,6 +1311,39 @@
   </div>
 
   <button class="mobile-chat-toggle" id="mobileChatToggle" onclick="toggleMobileChat()">💬<span class="chat-badge" id="chatBadge">!</span></button>
+</div>
+
+<!-- Profile Edit Overlay -->
+<div class="profile-overlay" id="profileOverlay">
+  <div class="profile-panel">
+    <h3>✏️ Edit Profile</h3>
+    <p class="pp-sub">Update your profile info</p>
+    <div class="pp-field">
+      <div class="pp-label">Username</div>
+      <div class="pp-uname-row">
+        <input type="text" class="pp-input" id="ppUsername" maxlength="20" autocomplete="off">
+        <button class="pp-uname-btn" id="ppUnameBtn" onclick="changeUsername()">Change — $2.99</button>
+      </div>
+      <div class="pp-note" id="ppUnameNote">Username changes cost $2.99 with a 30-day cooldown</div>
+    </div>
+    <div class="pp-field">
+      <div class="pp-label">Bio</div>
+      <textarea class="pp-input" id="ppBio" rows="3" maxlength="200" placeholder="Tell people about yourself..."></textarea>
+      <div class="pp-note"><span id="ppBioCount">0</span>/200</div>
+    </div>
+    <div class="pp-field">
+      <div class="pp-label">Gender</div>
+      <select class="pp-input" id="ppGender" style="appearance:none"><option value="">Not set</option><option value="male">Male</option><option value="female">Female</option><option value="nonbinary">Non-binary</option><option value="other">Other</option><option value="prefer_not">Prefer not to say</option></select>
+    </div>
+    <div class="pp-field">
+      <div class="pp-label">Country</div>
+      <select class="pp-input" id="ppCountry" style="appearance:none"><option value="">Not set</option><option value="US">United States</option><option value="GB">United Kingdom</option><option value="CA">Canada</option><option value="AU">Australia</option><option value="DE">Germany</option><option value="FR">France</option><option value="BR">Brazil</option><option value="IN">India</option><option value="JP">Japan</option><option value="KR">South Korea</option><option value="MX">Mexico</option><option value="ES">Spain</option><option value="IT">Italy</option><option value="PH">Philippines</option><option value="TR">Turkey</option><option value="SA">Saudi Arabia</option><option value="EG">Egypt</option><option value="NG">Nigeria</option><option value="AE">UAE</option><option value="OTHER">Other</option></select>
+    </div>
+    <div class="pp-error" id="ppError"></div>
+    <button class="pp-save-btn" onclick="saveProfile()">Save Changes</button>
+    <button class="pp-close" onclick="closeProfileEdit()">Cancel</button>
+    <div id="ppPaypalContainer" style="margin-top:12px;display:none"></div>
+  </div>
 </div>
 
 <!-- Rules Screen -->
@@ -2614,20 +2701,182 @@ function updateAuthStatusUI() {
 }
 
 function toggleAuthMenu() {
-  if (mySignedIn) {
-    if (confirm(`Signed in as ${myUsername}\n\nSign out?`)) {
-      signOut();
+  if (!mySignedIn) return;
+  const dd = document.getElementById('profileDropdown');
+  dd.classList.toggle('active');
+}
+
+function closeProfileDropdown() {
+  document.getElementById('profileDropdown').classList.remove('active');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  const nav = document.getElementById('authStatusNav');
+  const dd = document.getElementById('profileDropdown');
+  if (dd && !dd.contains(e.target) && e.target !== nav && !nav?.contains(e.target)) {
+    dd.classList.remove('active');
+  }
+});
+
+let myAccountData = null;
+
+async function openProfileEdit() {
+  closeProfileDropdown();
+  if (!myGoogleId) return;
+
+  // Load current profile
+  try {
+    const res = await fetch(`${SERVER_HTTP}/auth/profile?googleId=${myGoogleId}`);
+    const data = await res.json();
+    myAccountData = data.account;
+  } catch (e) { return; }
+
+  if (!myAccountData) return;
+
+  document.getElementById('ppUsername').value = myAccountData.username || '';
+  document.getElementById('ppBio').value = myAccountData.bio || '';
+  document.getElementById('ppBioCount').textContent = (myAccountData.bio || '').length;
+  document.getElementById('ppGender').value = myAccountData.gender || '';
+  document.getElementById('ppCountry').value = myAccountData.country || '';
+  document.getElementById('ppError').style.display = 'none';
+  document.getElementById('ppPaypalContainer').style.display = 'none';
+
+  // Check username change cooldown
+  const btn = document.getElementById('ppUnameBtn');
+  const note = document.getElementById('ppUnameNote');
+  if (myAccountData.lastUsernameChange) {
+    const last = new Date(myAccountData.lastUsernameChange);
+    const now = new Date();
+    const daysSince = (now - last) / (1000 * 60 * 60 * 24);
+    if (daysSince < 30) {
+      const daysLeft = Math.ceil(30 - daysSince);
+      btn.disabled = true;
+      note.textContent = `Wait ${daysLeft} more day${daysLeft !== 1 ? 's' : ''} before changing username again`;
+    } else {
+      btn.disabled = false;
+      note.textContent = 'Username changes cost $2.99 with a 30-day cooldown';
     }
+  } else {
+    btn.disabled = false;
+    note.textContent = 'Username changes cost $2.99 with a 30-day cooldown';
+  }
+
+  document.getElementById('profileOverlay').classList.add('active');
+}
+
+function closeProfileEdit() {
+  document.getElementById('profileOverlay').classList.remove('active');
+}
+
+// Bio character counter
+document.getElementById('ppBio')?.addEventListener('input', function() {
+  document.getElementById('ppBioCount').textContent = this.value.length;
+});
+
+async function saveProfile() {
+  const bio = document.getElementById('ppBio').value.trim().slice(0, 200);
+  const gender = document.getElementById('ppGender').value;
+  const country = document.getElementById('ppCountry').value;
+  const errEl = document.getElementById('ppError');
+  errEl.style.display = 'none';
+
+  try {
+    const res = await fetch(`${SERVER_HTTP}/auth/update-profile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ googleId: myGoogleId, bio, gender, country }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      closeProfileEdit();
+      const toast = document.createElement('div');
+      toast.className = 'friend-added-toast';
+      toast.textContent = '✅ Profile updated!';
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2500);
+    } else {
+      errEl.textContent = data.error || 'Could not save';
+      errEl.style.display = 'block';
+    }
+  } catch (e) {
+    errEl.textContent = 'Could not connect to server';
+    errEl.style.display = 'block';
+  }
+}
+
+function changeUsername() {
+  const newName = document.getElementById('ppUsername').value.trim();
+  const errEl = document.getElementById('ppError');
+  errEl.style.display = 'none';
+
+  if (newName.length < 2 || newName.length > 20) {
+    errEl.textContent = 'Username must be 2-20 characters';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!/^[a-zA-Z0-9_]+$/.test(newName)) {
+    errEl.textContent = 'Letters, numbers, and underscores only';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (newName.toLowerCase() === myAccountData?.username?.toLowerCase()) {
+    errEl.textContent = 'That\'s already your username';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  // Show PayPal button for $2.99
+  const container = document.getElementById('ppPaypalContainer');
+  container.style.display = 'block';
+  container.innerHTML = '<p style="font-size:0.75rem;color:var(--text-dim);text-align:center;margin-bottom:8px">Pay $2.99 to change your username</p>';
+
+  if (typeof paypal !== 'undefined') {
+    paypal.Buttons({
+      style: { layout:'horizontal', color:'gold', shape:'rect', label:'pay', height:35, tagline:false },
+      createOrder: function() {
+        return fetch(`${SERVER_HTTP}/auth/change-username-order`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ googleId: myGoogleId, newUsername: newName }),
+        }).then(r => r.json()).then(data => {
+          if (data.error) { errEl.textContent = data.error; errEl.style.display = 'block'; throw new Error(data.error); }
+          return data.orderId;
+        });
+      },
+      onApprove: function(data) {
+        return fetch(`${SERVER_HTTP}/auth/capture-username-change`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: data.orderID, googleId: myGoogleId, newUsername: newName }),
+        }).then(r => r.json()).then(result => {
+          if (result.success) {
+            myUsername = result.username;
+            updateAuthStatusUI();
+            closeProfileEdit();
+            const toast = document.createElement('div');
+            toast.className = 'friend-added-toast';
+            toast.textContent = `✅ Username changed to ${result.username}!`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+          } else {
+            errEl.textContent = result.error || 'Failed';
+            errEl.style.display = 'block';
+          }
+        });
+      },
+      onError: function() { errEl.textContent = 'Payment error'; errEl.style.display = 'block'; },
+    }).render('#ppPaypalContainer');
   }
 }
 
 function signOut() {
+  closeProfileDropdown();
   myGoogleId = null;
   myUsername = '';
   mySignedIn = false;
   localStorage.removeItem('mingleGoogleId');
   updateAuthStatusUI();
-  // Show toast
   const toast = document.createElement('div');
   toast.className = 'friend-added-toast';
   toast.style.background = 'var(--surface-2)';

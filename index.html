@@ -747,6 +747,34 @@
     .admin-table { font-size:0.7rem; }
   }
 
+  /* ═══ RULES SCREEN ═══ */
+  .rules-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,0.92); backdrop-filter:blur(10px);
+    z-index:205; display:none; align-items:center; justify-content:center; padding:20px;
+  }
+  .rules-overlay.active { display:flex; }
+  .rules-box {
+    background:var(--surface); border:1px solid var(--border); border-radius:20px;
+    padding:32px 28px; max-width:440px; width:100%; animation:slideUp 0.3s ease; text-align:center;
+  }
+  .rules-box h2 { font-size:1.3rem; font-weight:800; margin-bottom:6px; }
+  .rules-box .rules-sub { font-size:0.8rem; color:var(--text-dim); margin-bottom:20px; }
+  .rules-list { text-align:left; margin-bottom:24px; display:flex; flex-direction:column; gap:12px; }
+  .rule-item { display:flex; align-items:flex-start; gap:10px; font-size:0.85rem; line-height:1.4; }
+  .rule-icon { font-size:1.2rem; flex-shrink:0; margin-top:1px; }
+  .rules-box button { width:100%; padding:14px; background:var(--accent); border:none; border-radius:12px; color:#fff; font-family:'Outfit',sans-serif; font-size:1rem; font-weight:700; cursor:pointer; }
+  .rules-box button:hover { background:#7c6ff0; }
+  .rules-check { display:flex; align-items:center; gap:8px; margin-bottom:16px; font-size:0.8rem; color:var(--text-dim); cursor:pointer; justify-content:center; }
+  .rules-check input { width:16px; height:16px; accent-color:var(--accent); cursor:pointer; }
+
+  /* ═══ SKIP CONFIRM ═══ */
+  .skip-confirm-toast {
+    position:fixed; bottom:100px; left:50%; transform:translateX(-50%);
+    background:rgba(232,67,147,0.9); color:#fff; padding:10px 20px; border-radius:10px;
+    font-family:'Outfit',sans-serif; font-weight:600; font-size:0.85rem; z-index:300;
+    animation:slideUp 0.2s ease; pointer-events:none;
+  }
+
   /* ═══ DISCORD BADGE ═══ */
   .discord-badge {
     position:fixed; right:16px; top:50%; transform:translateY(-50%); z-index:100;
@@ -1231,6 +1259,23 @@
   <button class="mobile-chat-toggle" id="mobileChatToggle" onclick="toggleMobileChat()">💬<span class="chat-badge" id="chatBadge">!</span></button>
 </div>
 
+<!-- Rules Screen -->
+<div class="rules-overlay" id="rulesOverlay">
+  <div class="rules-box">
+    <h2>⚠️ Before You Start</h2>
+    <p class="rules-sub">Please read and agree to the rules</p>
+    <div class="rules-list">
+      <div class="rule-item"><span class="rule-icon">✅</span><span><strong>Be respectful.</strong> Treat everyone with kindness. Harassment, hate speech, and bullying are not tolerated.</span></div>
+      <div class="rule-item"><span class="rule-icon">🚫</span><span><strong>No nudity or sexual content.</strong> Keep your clothes on. Any explicit content will result in an immediate ban.</span></div>
+      <div class="rule-item"><span class="rule-icon">🔒</span><span><strong>Protect your privacy.</strong> Don't share personal info like your full name, address, phone number, or school.</span></div>
+      <div class="rule-item"><span class="rule-icon">💬</span><span><strong>This is not a dating app.</strong> MingleNow is for meeting new people and having conversations.</span></div>
+      <div class="rule-item"><span class="rule-icon">🚩</span><span><strong>Report bad behavior.</strong> If someone breaks the rules, hit the 🚩 report button.</span></div>
+    </div>
+    <label class="rules-check"><input type="checkbox" id="rulesAgree" onchange="document.getElementById('rulesStartBtn').disabled=!this.checked"> I agree to follow the rules</label>
+    <button id="rulesStartBtn" disabled onclick="acceptRules()">Continue →</button>
+  </div>
+</div>
+
 <!-- Auth Modal -->
 <div class="username-overlay" id="usernameOverlay">
   <div class="username-box" id="authChoiceBox">
@@ -1596,7 +1641,28 @@ async function completeProfile() {
   btn.disabled = false;
 }
 
+let rulesAccepted = sessionStorage.getItem('mingleRulesAccepted') === 'true';
+
 async function proceedToChat() {
+  // Show rules screen first (once per session)
+  if (!rulesAccepted) {
+    document.getElementById('rulesAgree').checked = false;
+    document.getElementById('rulesStartBtn').disabled = true;
+    document.getElementById('rulesOverlay').classList.add('active');
+    return;
+  }
+
+  proceedToChatReal();
+}
+
+function acceptRules() {
+  rulesAccepted = true;
+  sessionStorage.setItem('mingleRulesAccepted', 'true');
+  document.getElementById('rulesOverlay').classList.remove('active');
+  proceedToChatReal();
+}
+
+async function proceedToChatReal() {
   // Get media for video mode
   if (chatMode === 'video') {
     try {
@@ -1689,7 +1755,7 @@ async function handleSignalingMessage(msg) {
       break;
 
     case 'waiting':
-      setStatus('searching', `Searching... (${msg.position} in queue)`);
+      setStatus('searching', 'Looking for someone...');
       break;
 
     case 'matched':
@@ -1908,7 +1974,34 @@ function updateMediaBtns() {
   cam.className = `ctrl-btn ${camOn ? 'on' : 'off'}`;
 }
 
+let skipPending = false;
+let skipTimer = null;
+
 function skipNext() {
+  if (!isConnected) {
+    // Not connected, just skip freely
+    doSkip();
+    return;
+  }
+
+  if (skipPending) {
+    // Second press — confirmed, do the skip
+    clearTimeout(skipTimer);
+    skipPending = false;
+    removeSkipToast();
+    doSkip();
+  } else {
+    // First press — show confirmation
+    skipPending = true;
+    showSkipToast();
+    skipTimer = setTimeout(() => {
+      skipPending = false;
+      removeSkipToast();
+    }, 3000);
+  }
+}
+
+function doSkip() {
   isConnected = false;
   partnerUsername = 'Stranger';
   closePeerConnection();
@@ -1919,6 +2012,56 @@ function skipNext() {
   setStatus('searching', 'Looking for someone...');
   wsSend({ type: 'skip', interests, username: myUsername, googleId: myGoogleId });
 }
+
+function showSkipToast() {
+  removeSkipToast();
+  const toast = document.createElement('div');
+  toast.className = 'skip-confirm-toast';
+  toast.id = 'skipToast';
+  toast.textContent = 'Press Next again or Esc to skip';
+  document.body.appendChild(toast);
+}
+
+function removeSkipToast() {
+  document.getElementById('skipToast')?.remove();
+}
+
+// Double-Esc to skip
+let escPending = false;
+let escTimer = null;
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.getElementById('pageChat')?.classList.contains('active')) {
+    // Close any open overlays first
+    if (document.getElementById('reportOverlay')?.classList.contains('active')) return;
+    if (document.getElementById('coinShopOverlay')?.classList.contains('active')) return;
+    if (document.getElementById('perksOverlay')?.classList.contains('active')) return;
+    if (document.getElementById('friendsOverlay')?.classList.contains('active')) return;
+    if (document.getElementById('dmOverlay')?.classList.contains('active')) return;
+
+    if (!isConnected) {
+      doSkip();
+      return;
+    }
+
+    if (escPending) {
+      clearTimeout(escTimer);
+      escPending = false;
+      skipPending = false;
+      removeSkipToast();
+      doSkip();
+    } else {
+      escPending = true;
+      showSkipToast();
+      skipPending = true;
+      escTimer = setTimeout(() => {
+        escPending = false;
+        skipPending = false;
+        removeSkipToast();
+      }, 3000);
+    }
+  }
+});
 
 // ══════════════════════════════════════════
 // CHAT

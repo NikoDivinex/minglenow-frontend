@@ -1713,7 +1713,7 @@ function connectWebSocket() {
 
   ws.onopen = () => {
     setStatus('searching', 'Looking for someone...');
-    ws.send(JSON.stringify({ type: 'join_queue', interests, username: myUsername, googleId: myGoogleId }));
+    ws.send(JSON.stringify({ type: 'join_queue', interests, username: myUsername, googleId: myGoogleId, mode: chatMode }));
   };
 
   ws.onmessage = (event) => {
@@ -2010,7 +2010,7 @@ function doSkip() {
   unreadMobile = 0;
   document.getElementById('chatBadge').classList.remove('has-msg');
   setStatus('searching', 'Looking for someone...');
-  wsSend({ type: 'skip', interests, username: myUsername, googleId: myGoogleId });
+  wsSend({ type: 'skip', interests, username: myUsername, googleId: myGoogleId, mode: chatMode });
 }
 
 function showSkipToast() {

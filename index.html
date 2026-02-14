@@ -1247,10 +1247,8 @@ function goHome() {
 async function startChat(mode) {
   chatMode = mode;
 
-  // Check if we already have a saved username
-  const saved = sessionStorage.getItem('mingleUsername');
-  if (saved) {
-    myUsername = saved;
+  // Check if we already have a claimed username from server
+  if (myUsername) {
     proceedToChat();
   } else {
     // Show username prompt
@@ -1261,9 +1259,10 @@ async function startChat(mode) {
   }
 }
 
-function confirmUsername() {
+async function confirmUsername() {
   const input = document.getElementById('usernameInput').value.trim();
   const errEl = document.getElementById('unameError');
+  errEl.style.display = 'none';
 
   if (input.length < 2 || input.length > 20) {
     errEl.textContent = 'Username must be 2-20 characters';
@@ -1276,10 +1275,35 @@ function confirmUsername() {
     return;
   }
 
-  myUsername = input;
-  sessionStorage.setItem('mingleUsername', myUsername);
-  document.getElementById('usernameOverlay').classList.remove('active');
-  proceedToChat();
+  // Check with server if username is available
+  const btn = document.querySelector('.username-box button');
+  btn.textContent = 'Checking...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${SERVER_HTTP}/username/claim`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: input }),
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      myUsername = data.username;
+      sessionStorage.setItem('mingleUsername', myUsername);
+      document.getElementById('usernameOverlay').classList.remove('active');
+      proceedToChat();
+    } else {
+      errEl.textContent = data.error || 'Username is already taken. Try another!';
+      errEl.style.display = 'block';
+    }
+  } catch (e) {
+    errEl.textContent = 'Could not connect to server. Try again.';
+    errEl.style.display = 'block';
+  }
+
+  btn.textContent = 'Start Chatting →';
+  btn.disabled = false;
 }
 
 async function proceedToChat() {
@@ -1933,6 +1957,14 @@ loadMyPerks();
 
 // Also fetch balance for landing page display
 fetch(`${SERVER_HTTP}/coins/balance`).then(r => r.json()).then(d => { if (d.balance !== undefined) updateCoinDisplay(d.balance); }).catch(() => {});
+
+// Load saved username from server (tied to IP)
+fetch(`${SERVER_HTTP}/username/mine`).then(r => r.json()).then(d => {
+  if (d.username) {
+    myUsername = d.username;
+    sessionStorage.setItem('mingleUsername', myUsername);
+  }
+}).catch(() => {});
 
 // ══════════════════════════════════════════
 // LEADERBOARD

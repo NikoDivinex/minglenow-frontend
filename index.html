@@ -422,6 +422,29 @@
   .username-box button:hover { transform:translateY(-2px); }
   .username-box button:active { transform:scale(0.97); }
 
+  /* ═══ LEADERBOARD ═══ */
+  .leaderboard { max-width:480px; margin:0 auto 40px; padding:0 20px; }
+  .leaderboard h2 { text-align:center; font-size:1.3rem; font-weight:800; margin-bottom:16px; }
+  .lb-list { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+  .lb-item {
+    display:flex; align-items:center; gap:12px; padding:12px 16px;
+    border-bottom:1px solid var(--border); transition:background 0.2s;
+  }
+  .lb-item:last-child { border-bottom:none; }
+  .lb-item:hover { background:var(--surface-2); }
+  .lb-rank {
+    width:32px; height:32px; display:flex; align-items:center; justify-content:center;
+    border-radius:50%; font-weight:800; font-size:0.85rem; flex-shrink:0;
+  }
+  .lb-rank-1 { background:linear-gradient(135deg,#f1c40f,#f39c12); color:#000; }
+  .lb-rank-2 { background:linear-gradient(135deg,#bdc3c7,#95a5a6); color:#000; }
+  .lb-rank-3 { background:linear-gradient(135deg,#e67e22,#d35400); color:#fff; }
+  .lb-rank-other { background:var(--surface-3); color:var(--text-dim); }
+  .lb-name { flex:1; font-weight:700; font-size:0.95rem; }
+  .lb-coins { font-weight:800; color:#f1c40f; font-size:0.9rem; white-space:nowrap; }
+  .lb-empty { text-align:center; padding:24px; color:var(--text-dim); font-size:0.85rem; }
+  .lb-crown { font-size:1.1rem; }
+
   /* ═══ ENTRANCE EFFECTS ═══ */
   .entrance-overlay {
     position:fixed; inset:0; z-index:180; pointer-events:none;
@@ -714,6 +737,13 @@
     <div class="feature"><div class="feature-icon">🌍</div><div class="feature-title">Global</div><div class="feature-desc">Connect with people from around the world</div></div>
     <div class="feature"><div class="feature-icon">⚡</div><div class="feature-title">Instant</div><div class="feature-desc">No sign-up needed. Start chatting now</div></div>
   </div>
+
+  <section class="leaderboard">
+    <h2>🏆 Top Gifted Users</h2>
+    <div class="lb-list" id="leaderboardList">
+      <div class="lb-empty">Loading leaderboard...</div>
+    </div>
+  </section>
 
   <section class="faq">
     <h2>Frequently Asked Questions</h2>
@@ -1903,6 +1933,48 @@ loadMyPerks();
 
 // Also fetch balance for landing page display
 fetch(`${SERVER_HTTP}/coins/balance`).then(r => r.json()).then(d => { if (d.balance !== undefined) updateCoinDisplay(d.balance); }).catch(() => {});
+
+// ══════════════════════════════════════════
+// LEADERBOARD
+// ══════════════════════════════════════════
+async function loadLeaderboard() {
+  try {
+    const res = await fetch(`${SERVER_HTTP}/leaderboard`);
+    const data = await res.json();
+    renderLeaderboard(data.leaderboard || []);
+  } catch (e) {
+    document.getElementById('leaderboardList').innerHTML = '<div class="lb-empty">Could not load leaderboard</div>';
+  }
+}
+
+function renderLeaderboard(entries) {
+  const el = document.getElementById('leaderboardList');
+  if (!entries.length) {
+    el.innerHTML = '<div class="lb-empty">No gifts sent yet. Be the first to send a gift! 🎁</div>';
+    return;
+  }
+
+  const medals = ['👑', '🥈', '🥉'];
+  el.innerHTML = entries.map((e, i) => {
+    const rankClass = i < 3 ? `lb-rank-${i + 1}` : 'lb-rank-other';
+    const nameColorClass = e.nameColor && e.nameColor !== 'none' ? `name-${e.nameColor}` : '';
+    return `<div class="lb-item">
+      <div class="lb-rank ${rankClass}">${i < 3 ? medals[i] : i + 1}</div>
+      <div class="lb-name ${nameColorClass}">${escapeHtml(e.username)}</div>
+      <div class="lb-coins">🪙 ${e.coinsReceived.toLocaleString()}</div>
+    </div>`;
+  }).join('');
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// Load leaderboard on page load and refresh every 30 seconds
+loadLeaderboard();
+setInterval(loadLeaderboard, 30000);
 
 // ══════════════════════════════════════════
 // M COINS & GIFT SYSTEM

@@ -54,8 +54,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://www.paypal.com/sdk/js?AcPcM3sB90xJ0O0XPfJWkEfLYUVhHa4lrl-Oknk82gEdF5_X7Xw5scK0bl-Msh6F-JCKSm-TZ0gjSkYW&currency=USD&disable-funding=credit,card" data-sdk-integration-source="button-factory"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -773,10 +771,6 @@
   .filter-item .fi-icon { font-size:1.4rem; }
   .filter-item .fi-name { font-weight:600; line-height:1.2; }
   .filter-item .fi-cost { font-size:0.55rem; color:#f1c40f; font-weight:700; }
-  .filter-canvas {
-    position:absolute; top:0; left:0; width:100%; height:100%;
-    pointer-events:none; z-index:2;
-  }
 
   /* ═══ PROFILE DROPDOWN ═══ */
   .profile-dropdown {
@@ -1294,9 +1288,8 @@
   <div class="chat-main">
     <div class="video-area" id="videoArea">
       <div class="video-grid" id="videoGrid">
-        <div class="vid-box" style="position:relative">
+        <div class="vid-box">
           <video id="localVideo" autoplay muted playsinline></video>
-          <canvas id="filterCanvas" class="filter-canvas"></canvas>
           <div class="vid-label">You</div>
           <div class="vid-placeholder" id="localPlaceholder" style="display:none"><div class="vid-placeholder-icon">📷</div><div>Camera off</div></div>
         </div>
@@ -1337,10 +1330,6 @@
           <div class="filter-grid" id="filterGridCSS"></div>
           <div class="filter-section-title">✨ Premium Color Filters — M Coins</div>
           <div class="filter-grid" id="filterGridCSSPremium"></div>
-          <div class="filter-section-title">😎 Face Filters — Free</div>
-          <div class="filter-grid" id="filterGridFace"></div>
-          <div class="filter-section-title">👑 Premium Face Filters — M Coins</div>
-          <div class="filter-grid" id="filterGridFacePremium"></div>
         </div>
       </div>
     </div>
@@ -2537,28 +2526,11 @@ const FILTERS = {
     dream:     { name: 'Dream',      icon: '🌸', css: 'saturate(1.3) brightness(1.15) contrast(0.9) blur(0.5px)', cost: 50 },
     nightvision:{ name: 'Night',     icon: '🟢', css: 'hue-rotate(80deg) saturate(3) brightness(1.2)', cost: 50 },
     xray:      { name: 'X-Ray',      icon: '☠️', css: 'invert(100%) hue-rotate(180deg)', cost: 75 },
-  },
-  face: {
-    sunglasses:{ name: 'Shades',     icon: '😎', overlay: 'sunglasses', free: true },
-    hearts:    { name: 'Hearts',     icon: '😍', overlay: 'hearts', free: true },
-    clown:     { name: 'Clown',      icon: '🤡', overlay: 'clown', free: true },
-    dog:       { name: 'Dog',        icon: '🐶', overlay: 'dog', cost: 50 },
-    cat:       { name: 'Cat',        icon: '🐱', overlay: 'cat', cost: 50 },
-    crown:     { name: 'Crown',      icon: '👑', overlay: 'crown', cost: 75 },
-    devil:     { name: 'Devil',      icon: '😈', overlay: 'devil', cost: 75 },
-    angel:     { name: 'Angel',      icon: '😇', overlay: 'angel', cost: 100 },
-    alien:     { name: 'Alien',      icon: '👽', overlay: 'alien', cost: 100 },
-    fire:      { name: 'Fire',       icon: '🔥', overlay: 'fire', cost: 150 },
   }
 };
 
 let activeFilter = null;
-let activeFaceFilter = null;
-let faceMesh = null;
-let faceMeshRunning = false;
-let faceResults = null;
-let filterAnimFrame = null;
-let ownedFilters = new Set(); // Track purchased filters
+let ownedFilters = new Set();
 
 function toggleFilterTray() {
   const tray = document.getElementById('filterTray');
@@ -2585,24 +2557,6 @@ function renderFilterTray() {
       ${!owned ? `<span class="fi-cost">🪙 ${f.cost}</span>` : ''}
     </div>`;
   }).join('');
-
-  // Face Free
-  const faceFree = document.getElementById('filterGridFace');
-  faceFree.innerHTML = Object.entries(FILTERS.face).filter(([_, f]) => f.free).map(([id, f]) =>
-    `<div class="filter-item ${activeFaceFilter === id ? 'active' : ''}" onclick="applyFace('${id}')">
-      <span class="fi-icon">${f.icon}</span><span class="fi-name">${f.name}</span>
-    </div>`
-  ).join('');
-
-  // Face Premium
-  const facePrem = document.getElementById('filterGridFacePremium');
-  facePrem.innerHTML = Object.entries(FILTERS.face).filter(([_, f]) => !f.free).map(([id, f]) => {
-    const owned = ownedFilters.has(id);
-    return `<div class="filter-item ${activeFaceFilter === id ? 'active' : ''} ${!owned ? 'locked' : ''}" onclick="applyFace('${id}')">
-      <span class="fi-icon">${f.icon}</span><span class="fi-name">${f.name}</span>
-      ${!owned ? `<span class="fi-cost">🪙 ${f.cost}</span>` : ''}
-    </div>`;
-  }).join('');
 }
 
 function applyCSS(id) {
@@ -2612,7 +2566,7 @@ function applyCSS(id) {
 
   // Check if premium and not owned
   if (!f.free && !ownedFilters.has(id)) {
-    buyFilter(id, f.cost, 'css');
+    buyFilter(id, f.cost);
     return;
   }
 
@@ -2621,38 +2575,13 @@ function applyCSS(id) {
   renderFilterTray();
 }
 
-function applyFace(id) {
-  const f = FILTERS.face[id];
-  if (!f) return;
-
-  // Check if premium and not owned
-  if (!f.free && !ownedFilters.has(id)) {
-    buyFilter(id, f.cost, 'face');
-    return;
-  }
-
-  if (activeFaceFilter === id) {
-    // Toggle off
-    activeFaceFilter = null;
-    stopFaceFilter();
-    renderFilterTray();
-    return;
-  }
-
-  activeFaceFilter = id;
-  startFaceFilter();
-  renderFilterTray();
-}
-
 function clearFilter() {
   activeFilter = null;
-  activeFaceFilter = null;
   document.getElementById('localVideo').style.filter = '';
-  stopFaceFilter();
   document.getElementById('filterTray').classList.remove('active');
 }
 
-async function buyFilter(id, cost, type) {
+async function buyFilter(id, cost) {
   if (!mySignedIn) { alert('Sign in with Google to buy premium filters!'); return; }
   if (myCoins < cost) { alert(`Not enough coins! You need ${cost} 🪙`); return; }
   if (!confirm(`Buy this filter for ${cost} 🪙?`)) return;
@@ -2667,9 +2596,7 @@ async function buyFilter(id, cost, type) {
     if (data.success) {
       ownedFilters.add(id);
       updateCoinDisplay(data.balance);
-      // Auto-apply after purchase
-      if (type === 'css') applyCSS(id);
-      else applyFace(id);
+      applyCSS(id);
     } else {
       alert(data.error || 'Could not buy filter');
     }
@@ -2683,183 +2610,6 @@ async function loadOwnedFilters() {
     const data = await res.json();
     ownedFilters = new Set(data.filters || []);
   } catch (e) {}
-}
-
-// ─── Face Mesh Tracking ───
-function startFaceFilter() {
-  if (faceMeshRunning) return;
-  const video = document.getElementById('localVideo');
-  const canvas = document.getElementById('filterCanvas');
-  if (!video || !canvas) return;
-
-  canvas.width = video.videoWidth || 640;
-  canvas.height = video.videoHeight || 480;
-
-  if (!faceMesh && typeof FaceMesh !== 'undefined') {
-    faceMesh = new FaceMesh({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
-    });
-    faceMesh.setOptions({ maxNumFaces: 1, refineLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
-    faceMesh.onResults((results) => { faceResults = results; });
-  }
-
-  faceMeshRunning = true;
-  processFaceFrame();
-}
-
-function stopFaceFilter() {
-  faceMeshRunning = false;
-  if (filterAnimFrame) cancelAnimationFrame(filterAnimFrame);
-  const canvas = document.getElementById('filterCanvas');
-  if (canvas) {
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  }
-}
-
-async function processFaceFrame() {
-  if (!faceMeshRunning || !activeFaceFilter) return;
-  const video = document.getElementById('localVideo');
-  const canvas = document.getElementById('filterCanvas');
-
-  if (video.readyState >= 2 && faceMesh) {
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
-    try { await faceMesh.send({ image: video }); } catch (e) {}
-    drawFaceFilter(canvas, faceResults);
-  }
-
-  filterAnimFrame = requestAnimationFrame(processFaceFrame);
-}
-
-function drawFaceFilter(canvas, results) {
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (!results || !results.multiFaceLandmarks || !results.multiFaceLandmarks[0]) return;
-
-  const lm = results.multiFaceLandmarks[0];
-  const w = canvas.width, h = canvas.height;
-
-  // Key landmark positions
-  const noseTip = lm[1];
-  const leftEye = lm[33];
-  const rightEye = lm[263];
-  const leftEar = lm[234];
-  const rightEar = lm[454];
-  const topHead = lm[10];
-  const chin = lm[152];
-  const leftMouth = lm[61];
-  const rightMouth = lm[291];
-  const foreHead = lm[151];
-
-  const eyeDist = Math.hypot((rightEye.x - leftEye.x) * w, (rightEye.y - leftEye.y) * h);
-  const faceW = Math.hypot((rightEar.x - leftEar.x) * w, (rightEar.y - leftEar.y) * h);
-  const faceAngle = Math.atan2((rightEye.y - leftEye.y) * h, (rightEye.x - leftEye.x) * w);
-
-  ctx.save();
-  ctx.font = 'bold 20px serif';
-  ctx.textAlign = 'center';
-
-  switch (activeFaceFilter) {
-    case 'sunglasses': {
-      const cx = ((leftEye.x + rightEye.x) / 2) * w;
-      const cy = ((leftEye.y + rightEye.y) / 2) * h;
-      const sz = eyeDist * 2.2;
-      ctx.translate(cx, cy); ctx.rotate(faceAngle);
-      ctx.font = `${sz}px serif`;
-      ctx.fillText('🕶️', 0, sz * 0.25);
-      break;
-    }
-    case 'hearts': {
-      const leX = leftEye.x * w, leY = leftEye.y * h;
-      const reX = rightEye.x * w, reY = rightEye.y * h;
-      const sz = eyeDist * 0.9;
-      ctx.font = `${sz}px serif`;
-      ctx.fillText('❤️', leX, leY - sz * 0.2);
-      ctx.fillText('❤️', reX, reY - sz * 0.2);
-      break;
-    }
-    case 'clown': {
-      const nx = noseTip.x * w, ny = noseTip.y * h;
-      ctx.font = `${eyeDist * 0.9}px serif`;
-      ctx.fillText('🔴', nx, ny + eyeDist * 0.15);
-      break;
-    }
-    case 'dog': {
-      const cx = ((leftEye.x + rightEye.x) / 2) * w;
-      const topY = topHead.y * h;
-      const sz = faceW * 0.55;
-      ctx.font = `${sz}px serif`;
-      ctx.fillText('🐶', cx - faceW * 0.45, topY - sz * 0.1);
-      ctx.fillText('🐶', cx + faceW * 0.45, topY - sz * 0.1);
-      // Tongue
-      const mouthY = ((leftMouth.y + rightMouth.y) / 2) * h;
-      const mouthX = ((leftMouth.x + rightMouth.x) / 2) * w;
-      ctx.font = `${eyeDist * 0.8}px serif`;
-      ctx.fillText('👅', mouthX, mouthY + eyeDist * 0.7);
-      break;
-    }
-    case 'cat': {
-      const topY = topHead.y * h;
-      const cx = ((leftEye.x + rightEye.x) / 2) * w;
-      const sz = faceW * 0.45;
-      ctx.font = `${sz}px serif`;
-      ctx.fillText('🐱', cx - faceW * 0.4, topY - sz * 0.15);
-      ctx.fillText('🐱', cx + faceW * 0.4, topY - sz * 0.15);
-      // Whiskers
-      const nx = noseTip.x * w, ny = noseTip.y * h;
-      ctx.strokeStyle = '#333'; ctx.lineWidth = 1.5;
-      for (let i = -1; i <= 1; i += 2) {
-        for (let j = -10; j <= 10; j += 10) {
-          ctx.beginPath(); ctx.moveTo(nx, ny + j); ctx.lineTo(nx + i * faceW * 0.5, ny + j - 5); ctx.stroke();
-        }
-      }
-      break;
-    }
-    case 'crown': {
-      const cx = foreHead.x * w;
-      const cy = topHead.y * h;
-      ctx.font = `${faceW * 0.6}px serif`;
-      ctx.translate(cx, cy - faceW * 0.15); ctx.rotate(faceAngle);
-      ctx.fillText('👑', 0, 0);
-      break;
-    }
-    case 'devil': {
-      const topY = topHead.y * h;
-      const cx = ((leftEye.x + rightEye.x) / 2) * w;
-      const sz = faceW * 0.35;
-      ctx.font = `${sz}px serif`;
-      ctx.fillText('🔱', cx - faceW * 0.35, topY - sz * 0.3);
-      ctx.fillText('🔱', cx + faceW * 0.35, topY - sz * 0.3);
-      break;
-    }
-    case 'angel': {
-      const cx = foreHead.x * w;
-      const topY = topHead.y * h;
-      ctx.font = `${faceW * 0.45}px serif`;
-      ctx.fillText('😇', cx, topY - faceW * 0.35);
-      break;
-    }
-    case 'alien': {
-      const leX = leftEye.x * w, leY = leftEye.y * h;
-      const reX = rightEye.x * w, reY = rightEye.y * h;
-      ctx.font = `${eyeDist * 1.1}px serif`;
-      ctx.fillText('👁️', leX, leY + eyeDist * 0.2);
-      ctx.fillText('👁️', reX, reY + eyeDist * 0.2);
-      break;
-    }
-    case 'fire': {
-      const topY = topHead.y * h;
-      const cx = foreHead.x * w;
-      const sz = faceW * 0.4;
-      ctx.font = `${sz}px serif`;
-      for (let i = -2; i <= 2; i++) {
-        ctx.fillText('🔥', cx + i * sz * 0.5, topY - sz * 0.3 + Math.sin(Date.now()/200 + i) * 5);
-      }
-      break;
-    }
-  }
-  ctx.restore();
 }
 
 // ══════════════════════════════════════════

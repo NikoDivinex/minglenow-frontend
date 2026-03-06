@@ -2755,15 +2755,28 @@ async function respondFriendConnect(fromGoogleId, accepted, btn) {
     showToast('Chat invite declined.');
     return;
   }
-  // Accepted — if not already in chat page, transition there first
-  if (!document.getElementById('pageChat')?.classList.contains('active')) {
-    chatMode = 'video';
+  // Accepted — transition to video chat
+  chatMode = 'video';
+  const alreadyOnChatPage = document.getElementById('pageChat')?.classList.contains('active');
+  if (!alreadyOnChatPage) {
+    // Promote bgWs to main ws before transitioning (keeps same server connection)
+    if (bgWs && bgWs.readyState === 1) {
+      ws = bgWs;
+      bgWs = null;
+      ws.onmessage = (event) => {
+        try { handleSignalingMessage(JSON.parse(event.data)); } catch(e) {}
+      };
+      ws.onclose = () => {
+        if (isConnected) {
+          setStatus('disconnected', 'Disconnected');
+          addSystemMessage('Connection to server lost. Click Next to reconnect.');
+        }
+        setTimeout(initBackgroundWS, 2000);
+      };
+    }
     showToast('🎲 Joining video chat with friend...', 3000);
-    try {
-      await proceedToChatReal();
-    } catch(e) {}
-    // Wait a moment for WS to connect, then send accept via the new real WS
-    await new Promise(r => setTimeout(r, 800));
+    try { await proceedToChatReal(true); } catch(e) {}
+    await new Promise(r => setTimeout(r, 400));
   }
   const activeWs = (ws && ws.readyState === 1) ? ws : (bgWs && bgWs.readyState === 1) ? bgWs : null;
   if (activeWs) activeWs.send(JSON.stringify({ type: 'friend_connect_respond', fromGoogleId, accepted: true }));
@@ -2771,19 +2784,30 @@ async function respondFriendConnect(fromGoogleId, accepted, btn) {
 
 // Called when bgWs receives a 'matched' message (friend connect accepted)
 async function handleFriendConnectMatched(msg) {
-  // If already on chat page, just handle normally via the main ws
-  if (document.getElementById('pageChat')?.classList.contains('active')) return;
-  // Transition from home page to video chat
+  if (document.getElementById('pageChat')?.classList.contains('active')) {
+    // Already on chat page — matched arrived on bgWs but need to process it on ws context
+    handleSignalingMessage(msg);
+    return;
+  }
+  // On home page — transition to video chat, promote bgWs to main ws
   chatMode = 'video';
   showToast('🎲 Friend accepted! Starting video chat...', 3000);
   try {
-    // Transfer bgWs to main ws role
     ws = bgWs;
     bgWs = null;
-    // Process the matched message as if it came from the main WS
-    await proceedToChatReal(true); // true = skip new WS creation
-    // Give UI a moment to render then handle the match
-    await new Promise(r => setTimeout(r, 300));
+    // Reassign message handler so all future WS messages go through main handler
+    ws.onmessage = (event) => {
+      try { handleSignalingMessage(JSON.parse(event.data)); } catch(e) {}
+    };
+    ws.onclose = () => {
+      if (isConnected) {
+        setStatus('disconnected', 'Disconnected');
+        addSystemMessage('Connection to server lost. Click Next to reconnect.');
+      }
+      setTimeout(initBackgroundWS, 2000);
+    };
+    await proceedToChatReal(true);
+    await new Promise(r => setTimeout(r, 400));
     handleSignalingMessage(msg);
   } catch(e) { console.error('Friend connect transition error:', e); }
 }

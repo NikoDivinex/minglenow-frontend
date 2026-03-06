@@ -1816,7 +1816,7 @@ function acceptRules() {
   proceedToChatReal();
 }
 
-async function proceedToChatReal() {
+async function proceedToChatReal(skipWS = false) {
   loadOwnedFilters();
   // Get media for video mode
   if (chatMode === 'video') {
@@ -1855,7 +1855,7 @@ async function proceedToChatReal() {
 
   showPage('pageChat');
   setStatus('searching', 'Connecting to server...');
-  connectWebSocket();
+  if (!skipWS) connectWebSocket();
 }
 
 // ══════════════════════════════════════════
@@ -2747,13 +2747,45 @@ function showFriendConnectModal(fromUsername, fromGoogleId) {
   setTimeout(() => overlay.remove(), 30000);
 }
 
-function respondFriendConnect(fromGoogleId, accepted, btn) {
+async function respondFriendConnect(fromGoogleId, accepted, btn) {
   document.getElementById('fcModal')?.remove();
-  const activeWs = (ws && ws.readyState === 1) ? ws : (bgWs && bgWs.readyState === 1) ? bgWs : null;
-  if (activeWs) {
-    activeWs.send(JSON.stringify({ type: 'friend_connect_respond', fromGoogleId, accepted }));
-    if (!accepted) showToast('Chat invite declined.');
+  if (!accepted) {
+    const activeWs = (ws && ws.readyState === 1) ? ws : (bgWs && bgWs.readyState === 1) ? bgWs : null;
+    if (activeWs) activeWs.send(JSON.stringify({ type: 'friend_connect_respond', fromGoogleId, accepted: false }));
+    showToast('Chat invite declined.');
+    return;
   }
+  // Accepted — if not already in chat page, transition there first
+  if (!document.getElementById('pageChat')?.classList.contains('active')) {
+    chatMode = 'video';
+    showToast('🎲 Joining video chat with friend...', 3000);
+    try {
+      await proceedToChatReal();
+    } catch(e) {}
+    // Wait a moment for WS to connect, then send accept via the new real WS
+    await new Promise(r => setTimeout(r, 800));
+  }
+  const activeWs = (ws && ws.readyState === 1) ? ws : (bgWs && bgWs.readyState === 1) ? bgWs : null;
+  if (activeWs) activeWs.send(JSON.stringify({ type: 'friend_connect_respond', fromGoogleId, accepted: true }));
+}
+
+// Called when bgWs receives a 'matched' message (friend connect accepted)
+async function handleFriendConnectMatched(msg) {
+  // If already on chat page, just handle normally via the main ws
+  if (document.getElementById('pageChat')?.classList.contains('active')) return;
+  // Transition from home page to video chat
+  chatMode = 'video';
+  showToast('🎲 Friend accepted! Starting video chat...', 3000);
+  try {
+    // Transfer bgWs to main ws role
+    ws = bgWs;
+    bgWs = null;
+    // Process the matched message as if it came from the main WS
+    await proceedToChatReal(true); // true = skip new WS creation
+    // Give UI a moment to render then handle the match
+    await new Promise(r => setTimeout(r, 300));
+    handleSignalingMessage(msg);
+  } catch(e) { console.error('Friend connect transition error:', e); }
 }
 loadFriendsList();
 loadPendingRequests();
@@ -2769,6 +2801,8 @@ function initBackgroundWS() {
   bgWs = new WebSocket(SIGNALING_SERVER);
   bgWs.onopen = () => {
     bgWs.send(JSON.stringify({ type: 'set_google_id', googleId: myGoogleId, username: myUsername }));
+    // Request current online count immediately
+    fetch(`${SERVER_HTTP}/health`).then(r => r.json()).then(d => { if (d.online !== undefined) updateOnlineCount(d.online); }).catch(() => {});
   };
   bgWs.onmessage = (event) => {
     try {
@@ -2784,12 +2818,17 @@ function initBackgroundWS() {
           loadDMHistory(msg.toUsername);
         }
       }
+      if (msg.type === 'online_count' || msg.type === 'welcome') updateOnlineCount(msg.count ?? msg.online ?? 0);
       if (msg.type === 'friend_request_incoming') showFriendRequestNotification(msg.fromUsername, msg.fromGoogleId);
       if (msg.type === 'friend_request_accepted') { showFriendAcceptedNotification(msg.username); loadFriendsList().then(() => renderFriendsList()); }
       if (msg.type === 'friend_connect_incoming') showFriendConnectModal(msg.fromUsername, msg.fromGoogleId);
       if (msg.type === 'friend_connect_pending') showToast(`📡 Waiting for ${msg.toUsername} to accept...`, 5000);
       if (msg.type === 'friend_connect_error') showToast(`❌ ${msg.message}`, 4000);
       if (msg.type === 'friend_connect_declined') showToast(`😔 ${msg.byUsername} declined your chat invite.`, 4000);
+      if (msg.type === 'matched') {
+        // Friend accepted our connect invite — transition to video chat
+        handleFriendConnectMatched(msg);
+      }
     } catch(e) {}
   };
   bgWs.onclose = () => {
@@ -2821,6 +2860,24 @@ function wsSendAny(msg) {
       }
     } catch(e) {}
   }
+})();
+
+// ── Fetch online count immediately for all visitors (logged in or not) ──
+(async () => {
+  try {
+    const r = await fetch(`${SERVER_HTTP}/health`);
+    const d = await r.json();
+    if (d.online !== undefined) updateOnlineCount(d.online);
+  } catch(e) {}
+  // Then poll every 3s while on home page
+  setInterval(async () => {
+    if (document.getElementById('pageChat')?.classList.contains('active')) return;
+    try {
+      const r = await fetch(`${SERVER_HTTP}/health`);
+      const d = await r.json();
+      if (d.online !== undefined) updateOnlineCount(d.online);
+    } catch(e) {}
+  }, 3000);
 })();
 
 // ══════════════════════════════════════════

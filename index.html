@@ -15,10 +15,6 @@
 <!-- Open Graph (Facebook, Discord, iMessage) -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://uminglenow.com">
-<meta property="og:image" content="https://uminglenow.com/og-image.png">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta name="twitter:image" content="https://uminglenow.com/og-image.png">
 <meta property="og:title" content="MingleNow — Chat with Strangers Instantly">
 <meta property="og:description" content="Free random video & text chat with interest matching. Meet people from around the world. No sign-up needed.">
 <meta property="og:site_name" content="MingleNow">
@@ -505,6 +501,13 @@
   .friend-action-btn.remove { background:var(--surface-3); color:var(--red); }
   .friends-empty { text-align:center; padding:24px; color:var(--text-dim); font-size:0.85rem; line-height:1.6; }
   .friends-close { display:block; width:100%; text-align:center; background:none; border:none; color:var(--text-dim); font-family:'Outfit',sans-serif; font-size:0.85rem; cursor:pointer; margin-top:8px; padding:8px; }
+  .pending-header { font-weight:700; font-size:0.85rem; color:var(--text-dim); margin-bottom:8px; padding:0 2px; }
+  .pending-request-item { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; margin-bottom:6px; }
+  .pending-request-name { font-weight:600; font-size:0.9rem; }
+  .pending-btns { display:flex; gap:6px; }
+  .pending-btn { padding:5px 12px; border:none; border-radius:8px; font-size:0.8rem; font-weight:700; cursor:pointer; font-family:'Outfit',sans-serif; }
+  .pending-btn.accept { background:var(--accent); color:#fff; }
+  .pending-btn.decline { background:var(--surface-3,var(--surface-2)); color:var(--text-dim); border:1px solid var(--border); }
 
   /* DM Chat */
   .dm-overlay {
@@ -529,6 +532,10 @@
   .dm-input-bar input { flex:1; padding:10px 14px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:'Outfit',sans-serif; font-size:0.85rem; outline:none; }
   .dm-input-bar input:focus { border-color:var(--accent); }
   .dm-input-bar button { padding:10px 18px; background:var(--accent); border:none; border-radius:10px; color:#fff; font-family:'Outfit',sans-serif; font-weight:700; font-size:0.85rem; cursor:pointer; }
+  .dm-img-btn { padding:10px 12px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; font-size:1rem; cursor:pointer; flex-shrink:0; }
+  .dm-img-btn:hover { background:var(--surface-3,var(--surface-2)); border-color:var(--accent); }
+  .dm-bubble img { max-width:200px; max-height:200px; border-radius:8px; display:block; cursor:pointer; }
+  .dm-bubble img:hover { opacity:0.9; }
 
   /* ═══ LEADERBOARD ═══ */
   .leaderboard { max-width:480px; margin:0 auto 40px; padding:0 20px; }
@@ -1448,6 +1455,10 @@
   <div class="friends-panel">
     <h3>👥 Friends</h3>
     <p class="fp-sub">People you've added from chats</p>
+    <div id="pendingRequestsList" style="display:none">
+      <div class="pending-header">📬 Friend Requests</div>
+      <div id="pendingRequestsItems"></div>
+    </div>
     <div id="friendsList"><div class="friends-empty">No friends yet.<br>Click ➕ Add during a chat to save someone!</div></div>
     <button class="friends-close" onclick="closeFriendsList()">Close</button>
   </div>
@@ -1464,6 +1475,8 @@
       <div class="dm-bubble sys">Send a message to start the conversation!</div>
     </div>
     <div class="dm-input-bar">
+      <input type="file" id="dmImageInput" accept="image/*" style="display:none" onchange="sendDMImage(event)">
+      <button class="dm-img-btn" onclick="document.getElementById('dmImageInput').click()" title="Send image">🖼️</button>
       <input type="text" id="dmInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendDM()">
       <button onclick="sendDM()">Send</button>
     </div>
@@ -2001,7 +2014,16 @@ async function handleSignalingMessage(msg) {
       break;
 
     case 'dm_incoming':
-      receiveDM(msg.fromUsername, msg.text);
+      receiveDM(msg.fromUsername, msg.text, msg.image);
+      break;
+
+    case 'friend_request_incoming':
+      showFriendRequestNotification(msg.fromUsername, msg.fromGoogleId);
+      break;
+
+    case 'friend_request_accepted':
+      showFriendAcceptedNotification(msg.username);
+      loadFriendsList().then(() => renderFriendsList());
       break;
 
     case 'banned':
@@ -2357,6 +2379,7 @@ function openFriendsList() {
     return;
   }
   loadFriendsList().then(() => renderFriendsList());
+  loadPendingRequests();
   document.getElementById('friendsOverlay').classList.add('active');
 }
 
@@ -2414,10 +2437,15 @@ async function addCurrentPartner() {
     if (data.success) {
       const toast = document.createElement('div');
       toast.className = 'friend-added-toast';
-      toast.textContent = `✅ Added ${partnerUsername} as a friend!`;
+      if (data.accepted) {
+        toast.textContent = `✅ You and ${partnerUsername} are now friends!`;
+        addSystemMessage(`✅ You and ${partnerUsername} are now friends!`);
+      } else {
+        toast.textContent = `📬 Friend request sent to ${partnerUsername}!`;
+        addSystemMessage(`📬 Friend request sent to ${partnerUsername}! Waiting for them to accept.`);
+      }
       document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
-      addSystemMessage(`✅ You added ${partnerUsername} as a friend!`);
+      setTimeout(() => toast.remove(), 4000);
     } else {
       addSystemMessage(`ℹ️ ${data.error || 'Could not add friend.'}`);
     }
@@ -2467,9 +2495,10 @@ async function loadDMHistory(username) {
     const data = await res.json();
     const container = document.getElementById('dmMessages');
     if (data.messages && data.messages.length > 0) {
-      container.innerHTML = data.messages.map(m =>
-        `<div class="dm-bubble ${m.fromMe ? 'me' : 'them'}">${escapeHtml(m.text)}</div>`
-      ).join('');
+      container.innerHTML = data.messages.map(m => {
+        if (m.image) return `<div class="dm-bubble ${m.fromMe ? 'me' : 'them'}"><img src="${m.image}" alt="image" onclick="window.open(this.src,'_blank')"></div>`;
+        return `<div class="dm-bubble ${m.fromMe ? 'me' : 'them'}">${escapeHtml(m.text || '')}</div>`;
+      }).join('');
       container.scrollTop = container.scrollHeight;
     }
   } catch (e) {}
@@ -2491,13 +2520,42 @@ function sendDM() {
   wsSend({ type: 'dm_message', toUsername: currentDMFriend, text });
 }
 
-function receiveDM(fromUsername, text) {
+function sendDMImage(event) {
+  const file = event.target.files[0];
+  if (!file || !currentDMFriend || !myGoogleId) return;
+  if (file.size > 2 * 1024 * 1024) { alert('Image must be under 2MB'); return; }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const image = e.target.result;
+    const container = document.getElementById('dmMessages');
+    const bubble = document.createElement('div');
+    bubble.className = 'dm-bubble me';
+    const img = document.createElement('img');
+    img.src = image;
+    img.onclick = () => window.open(image, '_blank');
+    bubble.appendChild(img);
+    container.appendChild(bubble);
+    container.scrollTop = container.scrollHeight;
+    wsSend({ type: 'dm_message', toUsername: currentDMFriend, image });
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function receiveDM(fromUsername, text, image) {
   // If DM is open with this person, show it
   if (currentDMFriend === fromUsername) {
     const container = document.getElementById('dmMessages');
     const bubble = document.createElement('div');
     bubble.className = 'dm-bubble them';
-    bubble.textContent = text;
+    if (image) {
+      const img = document.createElement('img');
+      img.src = image;
+      img.onclick = () => window.open(image, '_blank');
+      bubble.appendChild(img);
+    } else {
+      bubble.textContent = text || '';
+    }
     container.appendChild(bubble);
     container.scrollTop = container.scrollHeight;
   } else {
@@ -2505,15 +2563,100 @@ function receiveDM(fromUsername, text) {
     const toast = document.createElement('div');
     toast.className = 'friend-added-toast';
     toast.style.cursor = 'pointer';
-    toast.textContent = `💬 ${fromUsername}: ${text.slice(0, 50)}`;
+    toast.textContent = image ? `🖼️ ${fromUsername} sent you an image` : `💬 ${fromUsername}: ${(text||'').slice(0, 50)}`;
     toast.onclick = () => { toast.remove(); openDM(fromUsername); };
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 5000);
   }
 }
 
+// ─── Friend Requests ───
+let pendingRequests = [];
+
+async function loadPendingRequests() {
+  if (!myGoogleId) return;
+  try {
+    const res = await fetch(`${SERVER_HTTP}/friends/pending?googleId=${myGoogleId}`);
+    const data = await res.json();
+    pendingRequests = data.pending || [];
+    renderPendingRequests();
+  } catch (e) {}
+}
+
+function renderPendingRequests() {
+  const wrapper = document.getElementById('pendingRequestsList');
+  const container = document.getElementById('pendingRequestsItems');
+  if (!wrapper || !container) return;
+  if (pendingRequests.length === 0) { wrapper.style.display = 'none'; return; }
+  wrapper.style.display = 'block';
+  container.innerHTML = pendingRequests.map(r => `
+    <div class="pending-request-item" id="pending-${r.googleId}">
+      <span class="pending-request-name">👤 ${escapeHtml(r.username)}</span>
+      <div class="pending-btns">
+        <button class="pending-btn accept" onclick="acceptFriendReq('${r.googleId}','${escapeHtml(r.username)}')">✅ Accept</button>
+        <button class="pending-btn decline" onclick="declineFriendReq('${r.googleId}')">✕ Decline</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function acceptFriendReq(requesterGoogleId, username) {
+  try {
+    await fetch(`${SERVER_HTTP}/friends/accept`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ googleId: myGoogleId, requesterGoogleId }),
+    });
+    pendingRequests = pendingRequests.filter(r => r.googleId !== requesterGoogleId);
+    renderPendingRequests();
+    await loadFriendsList();
+    renderFriendsList();
+    const toast = document.createElement('div');
+    toast.className = 'friend-added-toast';
+    toast.textContent = `✅ You and ${username} are now friends!`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  } catch (e) {}
+}
+
+async function declineFriendReq(requesterGoogleId) {
+  try {
+    await fetch(`${SERVER_HTTP}/friends/decline`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ googleId: myGoogleId, requesterGoogleId }),
+    });
+    pendingRequests = pendingRequests.filter(r => r.googleId !== requesterGoogleId);
+    renderPendingRequests();
+  } catch (e) {}
+}
+
+function showFriendRequestNotification(fromUsername, fromGoogleId) {
+  // Add to pending if not already there
+  if (!pendingRequests.find(r => r.googleId === fromGoogleId)) {
+    pendingRequests.push({ googleId: fromGoogleId, username: fromUsername });
+  }
+  // Show toast
+  const toast = document.createElement('div');
+  toast.className = 'friend-added-toast';
+  toast.style.cursor = 'pointer';
+  toast.textContent = `📬 ${fromUsername} wants to be your friend!`;
+  toast.onclick = () => { toast.remove(); openFriendsList(); };
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 7000);
+}
+
+function showFriendAcceptedNotification(username) {
+  const toast = document.createElement('div');
+  toast.className = 'friend-added-toast';
+  toast.textContent = `✅ ${username} accepted your friend request!`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
 // Load friends on startup
 loadFriendsList();
+loadPendingRequests();
 
 // ══════════════════════════════════════════
 // VIDEO FILTERS SYSTEM

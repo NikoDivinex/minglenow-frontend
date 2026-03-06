@@ -500,6 +500,28 @@
   .friend-action-btn.msg { background:var(--accent); color:#fff; }
   .friend-action-btn.connect { background:linear-gradient(135deg,#6c5ce7,#a29bfe); color:#fff; }
   .friend-action-btn.remove { background:var(--surface-3); color:var(--red); }
+  .friend-action-btn.group-invite { background:linear-gradient(135deg,#00b894,#00cec9); color:#fff; }
+
+  /* ── Group Video Overlay ── */
+  .group-overlay { display:none; position:fixed; inset:0; z-index:8000; background:#0a0a0f; flex-direction:column; }
+  .group-overlay.active { display:flex; }
+  .group-header { display:flex; align-items:center; gap:10px; padding:12px 16px; background:rgba(255,255,255,0.04); border-bottom:1px solid var(--border); flex-shrink:0; }
+  .group-title { font-weight:700; font-size:1rem; flex:1; }
+  .group-member-count { font-size:0.8rem; color:var(--text-2); background:var(--surface-2); padding:3px 10px; border-radius:20px; }
+  .group-invite-more-btn { background:linear-gradient(135deg,#00b894,#00cec9); color:#fff; border:none; border-radius:8px; padding:6px 14px; font-size:0.82rem; font-weight:700; cursor:pointer; }
+  .group-leave-btn { background:var(--surface-3); color:var(--red); border:none; border-radius:8px; padding:6px 14px; font-size:0.82rem; font-weight:700; cursor:pointer; }
+  .group-video-grid { flex:1; display:grid; gap:6px; padding:10px; overflow:hidden; }
+  .group-video-grid.count-1 { grid-template-columns:1fr; }
+  .group-video-grid.count-2 { grid-template-columns:1fr 1fr; }
+  .group-video-grid.count-3 { grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; }
+  .group-video-grid.count-4 { grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; }
+  .group-video-grid.count-3 .group-vid-tile:first-child { grid-column:span 2; }
+  .group-vid-tile { position:relative; background:#1a1a2e; border-radius:12px; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+  .group-vid-tile video { width:100%; height:100%; object-fit:cover; }
+  .group-vid-label { position:absolute; bottom:8px; left:10px; font-size:0.75rem; font-weight:600; background:rgba(0,0,0,0.55); padding:2px 8px; border-radius:6px; pointer-events:none; }
+  .group-vid-placeholder { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--text-2); gap:6px; font-size:0.8rem; }
+  .group-vid-placeholder-icon { font-size:2rem; }
+  .group-controls { display:flex; gap:10px; justify-content:center; padding:12px; background:rgba(255,255,255,0.03); border-top:1px solid var(--border); flex-shrink:0; }
   /* Friend connect request modal */
   .fc-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:9999; display:flex; align-items:center; justify-content:center; }
   .fc-modal { background:var(--surface-1); border:1px solid var(--border); border-radius:16px; padding:28px 24px; width:320px; text-align:center; box-shadow:0 8px 40px rgba(0,0,0,0.5); }
@@ -647,6 +669,8 @@
   .coin-display { display:flex; align-items:center; gap:5px; background:linear-gradient(135deg,#f39c12,#f1c40f); padding:4px 12px; border-radius:100px; font-weight:700; font-size:0.8rem; color:#000; cursor:pointer; transition:transform 0.2s; }
   .coin-display:hover { transform:scale(1.05); }
   .coin-display .coin-icon { font-size:0.9rem; }
+  .coin-alpha-wrap { position:relative; display:inline-flex; }
+  .coin-alpha-badge { position:absolute; top:-10px; right:-8px; background:linear
   .gift-btn { background:linear-gradient(135deg,#e84393,#fd79a8) !important; position:relative; }
   .gift-btn.has-coins::after { content:''; position:absolute; top:-2px; right:-2px; width:8px; height:8px; background:#f1c40f; border-radius:50%; }
 
@@ -1493,6 +1517,24 @@
   </div>
 </div>
 
+<!-- Group Video Chat Overlay -->
+<div class="group-overlay" id="groupOverlay">
+  <div class="group-header">
+    <span class="group-title">👥 Group Chat</span>
+    <span class="group-member-count" id="groupMemberCount">1/4</span>
+    <button class="group-invite-more-btn" id="groupInviteMoreBtn" onclick="openFriendsListForGroup()">➕ Invite</button>
+    <button class="group-leave-btn" onclick="leaveGroupChat()">✕ Leave</button>
+  </div>
+  <div class="group-video-grid" id="groupVideoGrid">
+    <!-- Video tiles injected dynamically -->
+  </div>
+  <div class="group-controls">
+    <button class="ctrl-btn on" id="groupBtnMic" onclick="toggleMic()" title="Microphone">🎤</button>
+    <button class="ctrl-btn on" id="groupBtnCam" onclick="toggleCam()" title="Camera">📷</button>
+    <button class="ctrl-btn filter-btn" onclick="toggleFilterTray()" title="Filters">🎭</button>
+  </div>
+</div>
+
 <!-- Perks Shop Modal -->
 <div class="perks-overlay" id="perksOverlay">
   <div class="perks-shop">
@@ -1572,7 +1614,7 @@ const ICE_SERVERS = [
 // STATE
 // ══════════════════════════════════════════
 let ws = null;
-let pc = null;               // RTCPeerConnection
+let pc = null;               // RTCPeerConnection (1:1 chats)
 let localStream = null;
 let chatMode = 'video';       // 'video' | 'text'
 let micOn = true, camOn = true;
@@ -1581,6 +1623,11 @@ let myId = null;
 let myUsername = '';
 let partnerUsername = 'Stranger';
 let interests = [];
+
+// ── Group Video Chat ──
+let groupRoomId = null;           // current group room ID (null if not in group)
+let groupPeers = new Map();       // peerId → RTCPeerConnection
+let groupPendingCandidates = new Map(); // peerId → [candidates] before pc ready
 
 // ══════════════════════════════════════════
 // INTEREST TAGS
@@ -2071,6 +2118,31 @@ async function handleSignalingMessage(msg) {
       startFriendSession(msg.sessionToken, msg.role, msg.partnerUsername);
       break;
 
+    case 'group_invite_incoming':
+      showGroupInviteModal(msg.roomId, msg.fromUsername);
+      break;
+    case 'group_invite_declined':
+      showToast(`😔 ${msg.byUsername} declined your group invite.`, 4000);
+      break;
+    case 'group_joined':
+      handleGroupJoined(msg);
+      break;
+    case 'group_member_joined':
+      handleGroupMemberJoined(msg);
+      break;
+    case 'group_member_left':
+      handleGroupMemberLeft(msg);
+      break;
+    case 'group_rtc_offer':
+      handleGroupRtcOffer(msg);
+      break;
+    case 'group_rtc_answer':
+      handleGroupRtcAnswer(msg);
+      break;
+    case 'group_rtc_ice':
+      handleGroupRtcIce(msg);
+      break;
+
     case 'banned':
       showBanScreen(msg.reason);
       cleanup();
@@ -2171,6 +2243,17 @@ function updateMediaBtns() {
   mic.className = `ctrl-btn ${micOn ? 'on' : 'off'}`;
   cam.textContent = camOn ? '📷' : '🚫';
   cam.className = `ctrl-btn ${camOn ? 'on' : 'off'}`;
+  // Sync group overlay buttons too
+  const gMic = document.getElementById('groupBtnMic');
+  const gCam = document.getElementById('groupBtnCam');
+  if (gMic) { gMic.textContent = micOn ? '🎤' : '🔇'; gMic.className = `ctrl-btn ${micOn ? 'on' : 'off'}`; }
+  if (gCam) { gCam.textContent = camOn ? '📷' : '🚫'; gCam.className = `ctrl-btn ${camOn ? 'on' : 'off'}`; }
+  // Update group local tile video if present
+  const localTile = document.getElementById('gtile_local');
+  if (localTile && localStream) {
+    const vid = localTile.querySelector('video');
+    if (vid && !vid.srcObject) vid.srcObject = localStream;
+  }
 }
 
 let skipPending = false;
@@ -2444,6 +2527,7 @@ async function renderFriendsList() {
     const flag = countryFlags[f.country] || '';
     const genderIcon = {male:'♂️',female:'♀️',nonbinary:'⚧️',other:'',prefer_not:''}[f.gender] || '';
     const connectBtn = f.online && f.googleId ? `<button class="friend-action-btn connect" onclick="connectToFriend('${f.googleId}','${escapeHtml(f.username)}')" title="Start live chat">🎲 Chat</button>` : '';
+    const groupBtn = f.online && f.googleId ? `<button class="friend-action-btn group-invite" onclick="inviteToGroup('${f.googleId}','${escapeHtml(f.username)}')" title="Invite to group video chat">👥 Group</button>` : '';
     return `<div class="friend-item">
       <div class="friend-avatar">👤</div>
       <div class="friend-info">
@@ -2452,6 +2536,7 @@ async function renderFriendsList() {
       </div>
       <div class="friend-actions">
         ${connectBtn}
+        ${groupBtn}
         <button class="friend-action-btn msg" onclick="closeFriendsList();openDM('${escapeHtml(f.username)}')" title="Send DM">💬 DM</button>
         <button class="friend-action-btn remove" onclick="removeFriend('${escapeHtml(f.username)}')">✕</button>
       </div>
@@ -2842,6 +2927,274 @@ async function handleFriendConnectMatched(msg) {
 loadFriendsList();
 loadPendingRequests();
 
+// ══════════════════════════════════════════
+// GROUP VIDEO CHAT
+// ══════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════
+// GROUP VIDEO CHAT — invite friends into a 2–4 person call
+// ══════════════════════════════════════════════════════════
+
+// ── Initiate: called from the 👥 Group button on a friend item ──
+async function inviteToGroup(friendGoogleId, friendUsername) {
+  if (!myGoogleId) { showToast('❌ Sign in to use Group Chat!'); return; }
+
+  // If we're not in a group yet, create one and enter it first
+  if (!groupRoomId) {
+    const newRoomId = `room_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+    const ok = await enterGroupRoom(newRoomId, []);   // show UI, get camera
+    if (!ok) return;                                   // camera denied
+    // Tell server we created/joined the room
+    wsSendAny({ type: 'group_invite_respond', roomId: newRoomId, accepted: true, googleId: myGoogleId, username: myUsername });
+  }
+
+  // Check capacity (count tiles that aren't our own local one)
+  const grid = document.getElementById('groupVideoGrid');
+  const memberTiles = grid ? [...grid.children].filter(t => t.id !== 'gtile_local').length : 0;
+  if (memberTiles >= 3) { showToast('❌ Group is full (max 4 people)!'); return; }
+
+  wsSendAny({ type: 'group_invite', roomId: groupRoomId, toGoogleId: friendGoogleId, fromUsername: myUsername, googleId: myGoogleId });
+  showToast(`📡 Invite sent to ${friendUsername}!`, 4000);
+  closeFriendsList();
+}
+
+function openFriendsListForGroup() { openFriendsList(); }
+
+// ── Incoming invite: show accept/decline modal ──
+function showGroupInviteModal(roomId, fromUsername) {
+  document.getElementById('groupInviteModal')?.remove();
+  const el = document.createElement('div');
+  el.className = 'fc-modal-overlay';
+  el.id = 'groupInviteModal';
+  el.innerHTML = `
+    <div class="fc-modal">
+      <h4>👥 Group Chat Invite</h4>
+      <p><strong>${escapeHtml(fromUsername)}</strong> wants you to join a group video chat!</p>
+      <div class="fc-modal-btns">
+        <button class="fc-modal-btn accept" onclick="acceptGroupInvite('${roomId}')">✅ Join</button>
+        <button class="fc-modal-btn decline" onclick="declineGroupInvite('${roomId}','${escapeHtml(fromUsername)}')">✕ Decline</button>
+      </div>
+    </div>`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 30000);
+}
+
+async function acceptGroupInvite(roomId) {
+  document.getElementById('groupInviteModal')?.remove();
+  if (!myGoogleId) { showToast('❌ Sign in required.'); return; }
+  // Tell server we accepted — server replies with group_joined which calls handleGroupJoined
+  wsSendAny({ type: 'group_invite_respond', roomId, accepted: true, googleId: myGoogleId, username: myUsername });
+}
+
+function declineGroupInvite(roomId, fromUsername) {
+  document.getElementById('groupInviteModal')?.remove();
+  wsSendAny({ type: 'group_invite_respond', roomId, accepted: false, googleId: myGoogleId, username: myUsername });
+}
+
+// ── Server confirmed we're in the room ──
+function handleGroupJoined(msg) {
+  // msg.roomId, msg.members = [{peerId, username}, ...]  (everyone already in room)
+  enterGroupRoom(msg.roomId, msg.members || []);
+}
+
+// ── A new person joined our existing room ──
+function handleGroupMemberJoined(msg) {
+  // msg.peerId, msg.username
+  // Pre-create their tile so there's a placeholder while we wait for offer
+  ensureGroupTile(msg.peerId, msg.username);
+  refreshGroupLayout();
+  showToast(`👋 ${msg.username} joined the group!`, 3000);
+}
+
+// ── Someone left ──
+function handleGroupMemberLeft(msg) {
+  const gpc = groupPeers.get(msg.peerId);
+  if (gpc) { try { gpc.close(); } catch(e) {} groupPeers.delete(msg.peerId); }
+  groupPendingCandidates.delete(msg.peerId);
+  document.getElementById(`gtile_${msg.peerId}`)?.remove();
+  refreshGroupLayout();
+  showToast(`${msg.username} left the group.`, 3000);
+}
+
+// ── Core: set up camera, show overlay, wire up to existing members ──
+async function enterGroupRoom(roomId, existingMembers) {
+  // Acquire camera if needed
+  if (!localStream) {
+    try {
+      const isMobile = window.innerWidth <= 768;
+      localStream = await navigator.mediaDevices.getUserMedia({
+        video: { width:{ideal:isMobile?480:1280}, height:{ideal:isMobile?640:720}, facingMode:'user', frameRate:{ideal:isMobile?24:30} },
+        audio: { echoCancellation:true, noiseSuppression:true, autoGainControl:true }
+      });
+      micOn = true; camOn = true; updateMediaBtns();
+    } catch(e) {
+      showToast('❌ Camera access required for Group Chat.'); return false;
+    }
+  }
+
+  groupRoomId = roomId;
+
+  // Build the grid fresh
+  const grid = document.getElementById('groupVideoGrid');
+  grid.innerHTML = '';  // clear any stale tiles
+
+  // Local tile always first
+  const localTile = document.createElement('div');
+  localTile.className = 'group-vid-tile';
+  localTile.id = 'gtile_local';
+  localTile.innerHTML = `<video autoplay muted playsinline></video>
+    <div class="group-vid-label">You</div>`;
+  localTile.querySelector('video').srcObject = localStream;
+  grid.appendChild(localTile);
+
+  // Show the overlay
+  document.getElementById('groupOverlay').classList.add('active');
+  refreshGroupLayout();
+
+  // For each existing member, create placeholder tile and initiate WebRTC
+  for (const m of existingMembers) {
+    ensureGroupTile(m.peerId, m.username);
+    groupInitiatePeer(m.peerId, m.username);
+  }
+
+  return true;
+}
+
+// ── Ensure a tile exists for a remote peer (idempotent) ──
+function ensureGroupTile(peerId, username) {
+  if (document.getElementById(`gtile_${peerId}`)) return;
+  const grid = document.getElementById('groupVideoGrid');
+  const tile = document.createElement('div');
+  tile.className = 'group-vid-tile';
+  tile.id = `gtile_${peerId}`;
+  tile.innerHTML = `
+    <video autoplay playsinline style="display:none"></video>
+    <div class="group-vid-label">${escapeHtml(username)}</div>
+    <div class="group-vid-placeholder">
+      <div class="group-vid-placeholder-icon">👤</div>
+      <div>Connecting…</div>
+    </div>`;
+  grid.appendChild(tile);
+  refreshGroupLayout();
+}
+
+// ── Create a peer connection and send an offer (we are initiator) ──
+async function groupInitiatePeer(peerId, peerUsername) {
+  const gpc = groupMakePeerConnection(peerId, peerUsername);
+  try {
+    const offer = await gpc.createOffer();
+    await gpc.setLocalDescription(offer);
+    wsSendAny({ type: 'group_rtc_offer', roomId: groupRoomId, toPeerId: peerId,
+      googleId: myGoogleId, sdp: gpc.localDescription.sdp });
+  } catch(e) { console.warn('group offer failed', e); }
+}
+
+// ── Build RTCPeerConnection wired to the right tile ──
+function groupMakePeerConnection(peerId, peerUsername) {
+  if (groupPeers.has(peerId)) return groupPeers.get(peerId);
+
+  const gpc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+  groupPeers.set(peerId, gpc);
+
+  // Add local tracks
+  if (localStream) localStream.getTracks().forEach(t => gpc.addTrack(t, localStream));
+
+  // ICE
+  gpc.onicecandidate = ({ candidate }) => {
+    if (candidate) wsSendAny({ type: 'group_rtc_ice', roomId: groupRoomId, toPeerId: peerId,
+      googleId: myGoogleId, candidate: candidate.candidate,
+      sdpMid: candidate.sdpMid, sdpMLineIndex: candidate.sdpMLineIndex });
+  };
+
+  // Remote stream → tile
+  gpc.ontrack = (event) => {
+    const stream = event.streams?.[0] ?? (() => { const s = new MediaStream(); s.addTrack(event.track); return s; })();
+    ensureGroupTile(peerId, peerUsername);
+    const tile = document.getElementById(`gtile_${peerId}`);
+    const vid = tile.querySelector('video');
+    vid.srcObject = stream;
+    vid.style.display = 'block';
+    const ph = tile.querySelector('.group-vid-placeholder');
+    if (ph) ph.style.display = 'none';
+    refreshGroupLayout();
+  };
+
+  // Connection drop
+  gpc.onconnectionstatechange = () => {
+    if (gpc.connectionState === 'failed' || gpc.connectionState === 'disconnected') {
+      const tile = document.getElementById(`gtile_${peerId}`);
+      if (tile) {
+        tile.querySelector('video').style.display = 'none';
+        let ph = tile.querySelector('.group-vid-placeholder');
+        if (!ph) { ph = document.createElement('div'); ph.className = 'group-vid-placeholder'; tile.appendChild(ph); }
+        ph.innerHTML = '<div class="group-vid-placeholder-icon">⚠️</div><div>Disconnected</div>';
+        ph.style.display = 'flex';
+      }
+    }
+  };
+
+  return gpc;
+}
+
+// ── Incoming offer from a peer ──
+async function handleGroupRtcOffer(msg) {
+  // msg: fromPeerId, fromUsername, sdp
+  const gpc = groupMakePeerConnection(msg.fromPeerId, msg.fromUsername || 'Member');
+  try {
+    await gpc.setRemoteDescription({ type: 'offer', sdp: msg.sdp });
+    // Flush any buffered ICE candidates
+    const queued = groupPendingCandidates.get(msg.fromPeerId) || [];
+    for (const c of queued) { try { await gpc.addIceCandidate(c); } catch(e) {} }
+    groupPendingCandidates.delete(msg.fromPeerId);
+    const answer = await gpc.createAnswer();
+    await gpc.setLocalDescription(answer);
+    wsSendAny({ type: 'group_rtc_answer', roomId: groupRoomId, toPeerId: msg.fromPeerId,
+      googleId: myGoogleId, sdp: gpc.localDescription.sdp });
+  } catch(e) { console.warn('group answer failed', e); }
+}
+
+async function handleGroupRtcAnswer(msg) {
+  const gpc = groupPeers.get(msg.fromPeerId);
+  if (!gpc) return;
+  try { await gpc.setRemoteDescription({ type: 'answer', sdp: msg.sdp }); } catch(e) {}
+}
+
+async function handleGroupRtcIce(msg) {
+  const gpc = groupPeers.get(msg.fromPeerId);
+  const cand = { candidate: msg.candidate, sdpMid: msg.sdpMid, sdpMLineIndex: msg.sdpMLineIndex };
+  if (gpc && gpc.remoteDescription) {
+    try { await gpc.addIceCandidate(cand); } catch(e) {}
+  } else {
+    const arr = groupPendingCandidates.get(msg.fromPeerId) || [];
+    arr.push(cand);
+    groupPendingCandidates.set(msg.fromPeerId, arr);
+  }
+}
+
+// ── Update grid CSS class based on tile count ──
+function refreshGroupLayout() {
+  const grid = document.getElementById('groupVideoGrid');
+  if (!grid) return;
+  const n = Math.min(grid.children.length, 4);
+  grid.className = `group-video-grid count-${n}`;
+  const el = document.getElementById('groupMemberCount');
+  if (el) el.textContent = `${n}/4`;
+}
+
+// ── Leave the group ──
+function leaveGroupChat() {
+  if (groupRoomId) {
+    wsSendAny({ type: 'group_leave', roomId: groupRoomId, googleId: myGoogleId });
+  }
+  for (const gpc of groupPeers.values()) { try { gpc.close(); } catch(e) {} }
+  groupPeers.clear();
+  groupPendingCandidates.clear();
+  groupRoomId = null;
+  const grid = document.getElementById('groupVideoGrid');
+  if (grid) grid.innerHTML = '';
+  document.getElementById('groupOverlay').classList.remove('active');
+}
+
 // ── Always-Online Background WebSocket ──
 // Keeps user marked online for friends even when not in a chat
 let bgWs = null;
@@ -2878,6 +3231,14 @@ function initBackgroundWS() {
       if (msg.type === 'friend_connect_error') showToast(`❌ ${msg.message}`, 4000);
       if (msg.type === 'friend_connect_declined') showToast(`😔 ${msg.byUsername} declined your chat invite.`, 4000);
       if (msg.type === 'friend_session_ready') startFriendSession(msg.sessionToken, msg.role, msg.partnerUsername);
+      if (msg.type === 'group_invite_incoming') showGroupInviteModal(msg.roomId, msg.fromUsername);
+      if (msg.type === 'group_invite_declined') showToast(`😔 ${msg.byUsername} declined your group invite.`, 4000);
+      if (msg.type === 'group_joined') handleGroupJoined(msg);
+      if (msg.type === 'group_member_joined') handleGroupMemberJoined(msg);
+      if (msg.type === 'group_member_left') handleGroupMemberLeft(msg);
+      if (msg.type === 'group_rtc_offer') handleGroupRtcOffer(msg);
+      if (msg.type === 'group_rtc_answer') handleGroupRtcAnswer(msg);
+      if (msg.type === 'group_rtc_ice') handleGroupRtcIce(msg);
       if (msg.type === 'matched') {
         // Friend accepted our connect invite — transition to video chat
         handleFriendConnectMatched(msg);

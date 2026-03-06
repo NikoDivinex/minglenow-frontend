@@ -512,9 +512,6 @@
   .friends-empty { text-align:center; padding:24px; color:var(--text-dim); font-size:0.85rem; line-height:1.6; }
   .friends-close { display:block; width:100%; text-align:center; background:none; border:none; color:var(--text-dim); font-family:'Outfit',sans-serif; font-size:0.85rem; cursor:pointer; margin-top:8px; padding:8px; }
   .pending-header { font-weight:700; font-size:0.85rem; color:var(--text-dim); margin-bottom:8px; padding:0 2px; }
-  .friends-req-badge { display:inline-flex; align-items:center; justify-content:center; background:#e84393; color:#fff; border-radius:50%; font-size:0.65rem; font-weight:800; min-width:16px; height:16px; padding:0 3px; margin-left:5px; animation:pulse-badge 1.5s ease-in-out infinite; }
-  @keyframes pulse-badge { 0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(232,67,147,0.4)} 50%{transform:scale(1.15);box-shadow:0 0 0 4px rgba(232,67,147,0)} }
-  #pendingRequestsList { border-bottom:1px solid var(--border); padding-bottom:12px; margin-bottom:12px; }
   .pending-request-item { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; margin-bottom:6px; }
   .pending-request-name { font-weight:600; font-size:0.9rem; }
   .pending-btns { display:flex; gap:6px; }
@@ -965,7 +962,7 @@
         <div id="authStatusNav" style="font-size:0.75rem;padding:6px 12px;border-radius:20px;background:var(--surface-2);border:1px solid var(--border);cursor:pointer;display:none" onclick="toggleAuthMenu()"></div>
         <div class="profile-dropdown" id="profileDropdown">
           <button class="pd-item" onclick="openProfileEdit()">✏️ Edit Profile</button>
-          <button class="pd-item" id="dropdownFriendsBtn" onclick="openFriendsList(); closeProfileDropdown()">👥 Friends</button>
+          <button class="pd-item" onclick="openFriendsList(); closeProfileDropdown()">👥 Friends</button>
           <div class="pd-sep"></div>
           <button class="pd-item danger" onclick="signOut(); closeProfileDropdown()">🚪 Sign Out</button>
         </div>
@@ -979,7 +976,7 @@
     <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
       <div class="coin-display" onclick="openCoinShop()" title="Buy M Coins" style="padding:8px 16px;font-size:0.9rem;cursor:pointer"><span class="coin-icon">🪙</span><span id="coinBalanceLanding">0</span> M Coins</div>
       <div class="coin-display" onclick="openPerksShop()" title="Perks Shop" style="background:linear-gradient(135deg,var(--accent),#e84393);color:#fff;padding:8px 16px;font-size:0.9rem;cursor:pointer">✨ Perks Shop</div>
-      <div id="landingFriendsBtn" class="coin-display" onclick="openFriendsList()" title="Friends" style="background:linear-gradient(135deg,#00b894,#00cec9);color:#fff;padding:8px 16px;font-size:0.9rem;cursor:pointer">👥 Friends</div>
+      <div class="coin-display" onclick="openFriendsList()" title="Friends" style="background:linear-gradient(135deg,#00b894,#00cec9);color:#fff;padding:8px 16px;font-size:0.9rem;cursor:pointer">👥 Friends</div>
     </div>
     <div class="mode-cards">
       <a class="mode-card" onclick="startChat('video')">
@@ -1870,6 +1867,8 @@ function connectWebSocket() {
   ws = new WebSocket(SIGNALING_SERVER);
 
   ws.onopen = () => {
+    // Close background WS — real WS takes over
+    if (bgWs && bgWs.readyState <= 1) { bgWs.close(); bgWs = null; }
     setStatus('searching', 'Looking for someone...');
     ws.send(JSON.stringify({ type: 'join_queue', interests, username: myUsername, googleId: myGoogleId, mode: chatMode }));
   };
@@ -1884,6 +1883,8 @@ function connectWebSocket() {
       setStatus('disconnected', 'Disconnected');
       addSystemMessage('Connection to server lost. Click Next to reconnect.');
     }
+    // Restart background WS so user stays online
+    setTimeout(initBackgroundWS, 2000);
   };
 
   ws.onerror = () => {
@@ -2028,6 +2029,17 @@ async function handleSignalingMessage(msg) {
 
     case 'dm_incoming':
       receiveDM(msg.fromUsername, msg.text, msg.image);
+      // If DM with this person is already open, reload history to show their message
+      if (currentDMFriend === msg.fromUsername && document.getElementById('dmOverlay')?.classList.contains('active')) {
+        loadDMHistory(msg.fromUsername);
+      }
+      break;
+
+    case 'dm_sent':
+      // Message we sent was confirmed saved — if DM is open with recipient, refresh history
+      if (currentDMFriend === msg.toUsername && document.getElementById('dmOverlay')?.classList.contains('active')) {
+        loadDMHistory(msg.toUsername);
+      }
       break;
 
     case 'friend_request_incoming':
@@ -2548,7 +2560,7 @@ function sendDM() {
   container.scrollTop = container.scrollHeight;
   input.value = '';
 
-  wsSend({ type: 'dm_message', toUsername: currentDMFriend, text });
+  wsSendAny({ type: 'dm_message', toUsername: currentDMFriend, text });
 }
 
 function sendDMImage(event) {
@@ -2567,7 +2579,7 @@ function sendDMImage(event) {
     bubble.appendChild(img);
     container.appendChild(bubble);
     container.scrollTop = container.scrollHeight;
-    wsSend({ type: 'dm_message', toUsername: currentDMFriend, image });
+    wsSendAny({ type: 'dm_message', toUsername: currentDMFriend, image });
   };
   reader.readAsDataURL(file);
   event.target.value = '';
@@ -2618,7 +2630,7 @@ function renderPendingRequests() {
   const wrapper = document.getElementById('pendingRequestsList');
   const container = document.getElementById('pendingRequestsItems');
   if (!wrapper || !container) return;
-  if (pendingRequests.length === 0) { wrapper.style.display = 'none'; updateFriendsBadge(0); return; }
+  if (pendingRequests.length === 0) { wrapper.style.display = 'none'; return; }
   wrapper.style.display = 'block';
   container.innerHTML = pendingRequests.map(r => `
     <div class="pending-request-item" id="pending-${r.googleId}">
@@ -2629,22 +2641,6 @@ function renderPendingRequests() {
       </div>
     </div>
   `).join('');
-  updateFriendsBadge(pendingRequests.length);
-}
-
-function updateFriendsBadge(count) {
-  ['landingFriendsBtn','dropdownFriendsBtn'].forEach(id => {
-    const btn = document.getElementById(id);
-    if (!btn) return;
-    // Remove old badge
-    btn.querySelector('.friends-req-badge')?.remove();
-    if (count > 0) {
-      const badge = document.createElement('span');
-      badge.className = 'friends-req-badge';
-      badge.textContent = count;
-      btn.appendChild(badge);
-    }
-  });
 }
 
 async function acceptFriendReq(requesterGoogleId, username) {
@@ -2683,13 +2679,12 @@ function showFriendRequestNotification(fromUsername, fromGoogleId) {
   if (!pendingRequests.find(r => r.googleId === fromGoogleId)) {
     pendingRequests.push({ googleId: fromGoogleId, username: fromUsername });
   }
-  renderPendingRequests(); // updates badge too
   // Show toast
   const toast = document.createElement('div');
   toast.className = 'friend-added-toast';
   toast.style.cursor = 'pointer';
-  toast.textContent = `📬 ${fromUsername} wants to be your friend! Tap to view.`;
-  toast.onclick = () => { toast.remove(); openFriendsList(); setTimeout(() => { document.getElementById('pendingRequestsList')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 300); };
+  toast.textContent = `📬 ${fromUsername} wants to be your friend!`;
+  toast.onclick = () => { toast.remove(); openFriendsList(); };
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 7000);
 }
@@ -2723,8 +2718,9 @@ function showToast(text, duration) {
 function connectToFriend(targetGoogleId, targetUsername) {
   if (!myGoogleId) { showToast('Sign in to connect with friends.'); return; }
   closeFriendsList();
-  if (ws && ws.readyState === 1) {
-    ws.send(JSON.stringify({ type: 'connect_friend', targetGoogleId }));
+  const activeWs = (ws && ws.readyState === 1) ? ws : (bgWs && bgWs.readyState === 1) ? bgWs : null;
+  if (activeWs) {
+    activeWs.send(JSON.stringify({ type: 'connect_friend', targetGoogleId }));
     showToast(`📡 Sending chat invite to ${targetUsername}...`, 4000);
   } else {
     showToast('❌ Not connected to server.');
@@ -2753,13 +2749,79 @@ function showFriendConnectModal(fromUsername, fromGoogleId) {
 
 function respondFriendConnect(fromGoogleId, accepted, btn) {
   document.getElementById('fcModal')?.remove();
-  if (ws && ws.readyState === 1) {
-    ws.send(JSON.stringify({ type: 'friend_connect_respond', fromGoogleId, accepted }));
+  const activeWs = (ws && ws.readyState === 1) ? ws : (bgWs && bgWs.readyState === 1) ? bgWs : null;
+  if (activeWs) {
+    activeWs.send(JSON.stringify({ type: 'friend_connect_respond', fromGoogleId, accepted }));
     if (!accepted) showToast('Chat invite declined.');
   }
 }
 loadFriendsList();
 loadPendingRequests();
+
+// ── Always-Online Background WebSocket ──
+// Keeps user marked online for friends even when not in a chat
+let bgWs = null;
+function initBackgroundWS() {
+  if (!myGoogleId || !myUsername) return;
+  // If already in the chat page with a real WS, no need for background one
+  if (ws && ws.readyState <= 1) return;
+  if (bgWs && bgWs.readyState <= 1) return;
+  bgWs = new WebSocket(SIGNALING_SERVER);
+  bgWs.onopen = () => {
+    bgWs.send(JSON.stringify({ type: 'set_google_id', googleId: myGoogleId, username: myUsername }));
+  };
+  bgWs.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      if (msg.type === 'dm_incoming') {
+        receiveDM(msg.fromUsername, msg.text, msg.image);
+        if (currentDMFriend === msg.fromUsername && document.getElementById('dmOverlay')?.classList.contains('active')) {
+          loadDMHistory(msg.fromUsername);
+        }
+      }
+      if (msg.type === 'dm_sent') {
+        if (currentDMFriend === msg.toUsername && document.getElementById('dmOverlay')?.classList.contains('active')) {
+          loadDMHistory(msg.toUsername);
+        }
+      }
+      if (msg.type === 'friend_request_incoming') showFriendRequestNotification(msg.fromUsername, msg.fromGoogleId);
+      if (msg.type === 'friend_request_accepted') { showFriendAcceptedNotification(msg.username); loadFriendsList().then(() => renderFriendsList()); }
+      if (msg.type === 'friend_connect_incoming') showFriendConnectModal(msg.fromUsername, msg.fromGoogleId);
+      if (msg.type === 'friend_connect_pending') showToast(`📡 Waiting for ${msg.toUsername} to accept...`, 5000);
+      if (msg.type === 'friend_connect_error') showToast(`❌ ${msg.message}`, 4000);
+      if (msg.type === 'friend_connect_declined') showToast(`😔 ${msg.byUsername} declined your chat invite.`, 4000);
+    } catch(e) {}
+  };
+  bgWs.onclose = () => {
+    // Reconnect after 5s if still on page
+    if (myGoogleId) setTimeout(initBackgroundWS, 5000);
+  };
+  bgWs.onerror = () => {};
+}
+
+// Helper to send on whichever WS is active
+function wsSendAny(msg) {
+  const activeWs = (ws && ws.readyState === 1) ? ws : (bgWs && bgWs.readyState === 1) ? bgWs : null;
+  if (activeWs) activeWs.send(JSON.stringify(msg));
+}
+
+// Start background WS on page load if already signed in
+(async () => {
+  const savedGid = localStorage.getItem('mingleGoogleId');
+  if (savedGid) {
+    try {
+      const res = await fetch(`${SERVER_HTTP}/auth/profile?googleId=${savedGid}`);
+      const data = await res.json();
+      if (data.account && data.account.username) {
+        if (!myGoogleId) myGoogleId = savedGid;
+        if (!myUsername) myUsername = data.account.username;
+        if (!mySignedIn) mySignedIn = true;
+        updateAuthStatusUI?.();
+        initBackgroundWS();
+      }
+    } catch(e) {}
+  }
+})();
 
 // ══════════════════════════════════════════
 // VIDEO FILTERS SYSTEM

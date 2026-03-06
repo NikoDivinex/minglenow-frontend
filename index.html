@@ -2067,6 +2067,10 @@ async function handleSignalingMessage(msg) {
       showToast(`😔 ${msg.byUsername} declined your chat invite.`, 4000);
       break;
 
+    case 'friend_session_ready':
+      startFriendSession(msg.sessionToken, msg.role, msg.partnerUsername);
+      break;
+
     case 'banned':
       showBanScreen(msg.reason);
       cleanup();
@@ -2750,66 +2754,90 @@ function showFriendConnectModal(fromUsername, fromGoogleId) {
 async function respondFriendConnect(fromGoogleId, accepted, btn) {
   document.getElementById('fcModal')?.remove();
   if (!accepted) {
-    const activeWs = (ws && ws.readyState === 1) ? ws : (bgWs && bgWs.readyState === 1) ? bgWs : null;
-    if (activeWs) activeWs.send(JSON.stringify({ type: 'friend_connect_respond', fromGoogleId, accepted: false }));
+    wsSendAny({ type: 'friend_connect_respond', fromGoogleId, accepted: false });
     showToast('Chat invite declined.');
     return;
   }
-  // Accepted — transition to video chat
-  chatMode = 'video';
-  const alreadyOnChatPage = document.getElementById('pageChat')?.classList.contains('active');
-  if (!alreadyOnChatPage) {
-    // Promote bgWs to main ws before transitioning (keeps same server connection)
-    if (bgWs && bgWs.readyState === 1) {
-      ws = bgWs;
-      bgWs = null;
-      ws.onmessage = (event) => {
-        try { handleSignalingMessage(JSON.parse(event.data)); } catch(e) {}
-      };
-      ws.onclose = () => {
-        if (isConnected) {
-          setStatus('disconnected', 'Disconnected');
-          addSystemMessage('Connection to server lost. Click Next to reconnect.');
-        }
-        setTimeout(initBackgroundWS, 2000);
-      };
-    }
-    showToast('🎲 Joining video chat with friend...', 3000);
-    try { await proceedToChatReal(true); } catch(e) {}
-    await new Promise(r => setTimeout(r, 400));
-  }
-  const activeWs = (ws && ws.readyState === 1) ? ws : (bgWs && bgWs.readyState === 1) ? bgWs : null;
-  if (activeWs) activeWs.send(JSON.stringify({ type: 'friend_connect_respond', fromGoogleId, accepted: true }));
+  wsSendAny({ type: 'friend_connect_respond', fromGoogleId, accepted: true });
+  // Response sent — server will reply with friend_session_ready on our WS
 }
 
-// Called when bgWs receives a 'matched' message (friend connect accepted)
+// Called when server sends friend_session_ready — do a clean transition to video chat
+async function startFriendSession(sessionToken, role, partnerName) {
+  chatMode = 'video';
+
+  // If currently in a chat, skip cleanly first
+  if (isConnected) {
+    isConnected = false;
+    closePeerConnection();
+    wsSend({ type: 'skip', interests, username: myUsername, googleId: myGoogleId, mode: chatMode });
+  }
+
+  showToast(`🎲 Connecting to ${partnerName}...`, 4000);
+
+  const doJoin = () => {
+    const activeWs = (ws && ws.readyState === 1) ? ws : (bgWs && bgWs.readyState === 1) ? bgWs : null;
+    if (activeWs) {
+      // Promote bgWs to ws if needed so WebRTC signaling uses the right connection
+      if (activeWs === bgWs) {
+        ws = bgWs;
+        bgWs = null;
+        ws.onmessage = (event) => {
+          try { handleSignalingMessage(JSON.parse(event.data)); } catch(e) {}
+        };
+        ws.onclose = () => {
+          if (isConnected) { setStatus('disconnected','Disconnected'); addSystemMessage('Connection lost.'); }
+          setTimeout(initBackgroundWS, 2000);
+        };
+      }
+      ws.send(JSON.stringify({ type: 'friend_join', sessionToken, role, googleId: myGoogleId, username: myUsername, mode: 'video' }));
+    }
+  };
+
+  // If not on chat page, transition there first
+  if (!document.getElementById('pageChat')?.classList.contains('active')) {
+    try {
+      await proceedToChatReal(true); // sets up camera, shows chat page, no new WS
+    } catch(e) {
+      showToast('❌ Camera access needed for video chat.');
+      return;
+    }
+    await new Promise(r => setTimeout(r, 300));
+  } else {
+    // Already on chat page — make sure camera is running
+    if (!localStream) {
+      try {
+        const isMobile = window.innerWidth <= 768;
+        localStream = await navigator.mediaDevices.getUserMedia({
+          video: { width:{ideal:isMobile?480:1280}, height:{ideal:isMobile?640:720}, facingMode:'user', frameRate:{ideal:isMobile?24:30} },
+          audio: { echoCancellation:true, noiseSuppression:true, autoGainControl:true }
+        });
+        document.getElementById('localVideo').srcObject = localStream;
+        document.getElementById('localVideo').style.display = 'block';
+        document.getElementById('localPlaceholder').style.display = 'none';
+        micOn = true; camOn = true; updateMediaBtns();
+      } catch(e) {
+        showToast('❌ Camera access needed for video chat.');
+        return;
+      }
+    }
+  }
+
+  // Reset chat UI state cleanly
+  document.getElementById('chatMessages').innerHTML = '';
+  document.getElementById('matchInfo').textContent = '';
+  closePeerConnection();
+  setStatus('searching', `Connecting to ${partnerName}...`);
+
+  doJoin();
+}
+
+// Called when bgWs receives a 'matched' message — should not happen anymore with session flow
+// but kept as fallback
 async function handleFriendConnectMatched(msg) {
   if (document.getElementById('pageChat')?.classList.contains('active')) {
-    // Already on chat page — matched arrived on bgWs but need to process it on ws context
     handleSignalingMessage(msg);
-    return;
   }
-  // On home page — transition to video chat, promote bgWs to main ws
-  chatMode = 'video';
-  showToast('🎲 Friend accepted! Starting video chat...', 3000);
-  try {
-    ws = bgWs;
-    bgWs = null;
-    // Reassign message handler so all future WS messages go through main handler
-    ws.onmessage = (event) => {
-      try { handleSignalingMessage(JSON.parse(event.data)); } catch(e) {}
-    };
-    ws.onclose = () => {
-      if (isConnected) {
-        setStatus('disconnected', 'Disconnected');
-        addSystemMessage('Connection to server lost. Click Next to reconnect.');
-      }
-      setTimeout(initBackgroundWS, 2000);
-    };
-    await proceedToChatReal(true);
-    await new Promise(r => setTimeout(r, 400));
-    handleSignalingMessage(msg);
-  } catch(e) { console.error('Friend connect transition error:', e); }
 }
 loadFriendsList();
 loadPendingRequests();
@@ -2849,6 +2877,7 @@ function initBackgroundWS() {
       if (msg.type === 'friend_connect_pending') showToast(`📡 Waiting for ${msg.toUsername} to accept...`, 5000);
       if (msg.type === 'friend_connect_error') showToast(`❌ ${msg.message}`, 4000);
       if (msg.type === 'friend_connect_declined') showToast(`😔 ${msg.byUsername} declined your chat invite.`, 4000);
+      if (msg.type === 'friend_session_ready') startFriendSession(msg.sessionToken, msg.role, msg.partnerUsername);
       if (msg.type === 'matched') {
         // Friend accepted our connect invite — transition to video chat
         handleFriendConnectMatched(msg);

@@ -498,10 +498,23 @@
   .friend-actions { display:flex; gap:6px; flex-shrink:0; }
   .friend-action-btn { padding:6px 12px; border-radius:8px; border:none; font-family:'Outfit',sans-serif; font-size:0.7rem; font-weight:600; cursor:pointer; }
   .friend-action-btn.msg { background:var(--accent); color:#fff; }
+  .friend-action-btn.connect { background:linear-gradient(135deg,#6c5ce7,#a29bfe); color:#fff; }
   .friend-action-btn.remove { background:var(--surface-3); color:var(--red); }
+  /* Friend connect request modal */
+  .fc-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:9999; display:flex; align-items:center; justify-content:center; }
+  .fc-modal { background:var(--surface-1); border:1px solid var(--border); border-radius:16px; padding:28px 24px; width:320px; text-align:center; box-shadow:0 8px 40px rgba(0,0,0,0.5); }
+  .fc-modal h4 { margin:0 0 10px; font-size:1.1rem; }
+  .fc-modal p { color:var(--text-2); font-size:0.9rem; margin:0 0 20px; }
+  .fc-modal-btns { display:flex; gap:10px; justify-content:center; }
+  .fc-modal-btn { padding:10px 22px; border-radius:10px; border:none; font-weight:700; cursor:pointer; font-size:0.9rem; }
+  .fc-modal-btn.accept { background:linear-gradient(135deg,#6c5ce7,#a29bfe); color:#fff; }
+  .fc-modal-btn.decline { background:var(--surface-3); color:var(--text-2); }
   .friends-empty { text-align:center; padding:24px; color:var(--text-dim); font-size:0.85rem; line-height:1.6; }
   .friends-close { display:block; width:100%; text-align:center; background:none; border:none; color:var(--text-dim); font-family:'Outfit',sans-serif; font-size:0.85rem; cursor:pointer; margin-top:8px; padding:8px; }
   .pending-header { font-weight:700; font-size:0.85rem; color:var(--text-dim); margin-bottom:8px; padding:0 2px; }
+  .friends-req-badge { display:inline-flex; align-items:center; justify-content:center; background:#e84393; color:#fff; border-radius:50%; font-size:0.65rem; font-weight:800; min-width:16px; height:16px; padding:0 3px; margin-left:5px; animation:pulse-badge 1.5s ease-in-out infinite; }
+  @keyframes pulse-badge { 0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(232,67,147,0.4)} 50%{transform:scale(1.15);box-shadow:0 0 0 4px rgba(232,67,147,0)} }
+  #pendingRequestsList { border-bottom:1px solid var(--border); padding-bottom:12px; margin-bottom:12px; }
   .pending-request-item { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; margin-bottom:6px; }
   .pending-request-name { font-weight:600; font-size:0.9rem; }
   .pending-btns { display:flex; gap:6px; }
@@ -952,7 +965,7 @@
         <div id="authStatusNav" style="font-size:0.75rem;padding:6px 12px;border-radius:20px;background:var(--surface-2);border:1px solid var(--border);cursor:pointer;display:none" onclick="toggleAuthMenu()"></div>
         <div class="profile-dropdown" id="profileDropdown">
           <button class="pd-item" onclick="openProfileEdit()">✏️ Edit Profile</button>
-          <button class="pd-item" onclick="openFriendsList(); closeProfileDropdown()">👥 Friends</button>
+          <button class="pd-item" id="dropdownFriendsBtn" onclick="openFriendsList(); closeProfileDropdown()">👥 Friends</button>
           <div class="pd-sep"></div>
           <button class="pd-item danger" onclick="signOut(); closeProfileDropdown()">🚪 Sign Out</button>
         </div>
@@ -966,7 +979,7 @@
     <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
       <div class="coin-display" onclick="openCoinShop()" title="Buy M Coins" style="padding:8px 16px;font-size:0.9rem;cursor:pointer"><span class="coin-icon">🪙</span><span id="coinBalanceLanding">0</span> M Coins</div>
       <div class="coin-display" onclick="openPerksShop()" title="Perks Shop" style="background:linear-gradient(135deg,var(--accent),#e84393);color:#fff;padding:8px 16px;font-size:0.9rem;cursor:pointer">✨ Perks Shop</div>
-      <div class="coin-display" onclick="openFriendsList()" title="Friends" style="background:linear-gradient(135deg,#00b894,#00cec9);color:#fff;padding:8px 16px;font-size:0.9rem;cursor:pointer">👥 Friends</div>
+      <div id="landingFriendsBtn" class="coin-display" onclick="openFriendsList()" title="Friends" style="background:linear-gradient(135deg,#00b894,#00cec9);color:#fff;padding:8px 16px;font-size:0.9rem;cursor:pointer">👥 Friends</div>
     </div>
     <div class="mode-cards">
       <a class="mode-card" onclick="startChat('video')">
@@ -2026,6 +2039,22 @@ async function handleSignalingMessage(msg) {
       loadFriendsList().then(() => renderFriendsList());
       break;
 
+    case 'friend_connect_incoming':
+      showFriendConnectModal(msg.fromUsername, msg.fromGoogleId);
+      break;
+
+    case 'friend_connect_pending':
+      showToast(`📡 Waiting for ${msg.toUsername} to accept...`, 5000);
+      break;
+
+    case 'friend_connect_error':
+      showToast(`❌ ${msg.message}`, 4000);
+      break;
+
+    case 'friend_connect_declined':
+      showToast(`😔 ${msg.byUsername} declined your chat invite.`, 4000);
+      break;
+
     case 'banned':
       showBanScreen(msg.reason);
       cleanup();
@@ -2398,6 +2427,7 @@ async function renderFriendsList() {
     const countryFlags = {US:'🇺🇸',GB:'🇬🇧',CA:'🇨🇦',AU:'🇦🇺',DE:'🇩🇪',FR:'🇫🇷',BR:'🇧🇷',IN:'🇮🇳',JP:'🇯🇵',KR:'🇰🇷',MX:'🇲🇽',ES:'🇪🇸',IT:'🇮🇹',PH:'🇵🇭',TR:'🇹🇷',SA:'🇸🇦',EG:'🇪🇬',NG:'🇳🇬',AE:'🇦🇪',OTHER:'🌍'};
     const flag = countryFlags[f.country] || '';
     const genderIcon = {male:'♂️',female:'♀️',nonbinary:'⚧️',other:'',prefer_not:''}[f.gender] || '';
+    const connectBtn = f.online && f.googleId ? `<button class="friend-action-btn connect" onclick="connectToFriend('${f.googleId}','${escapeHtml(f.username)}')" title="Start live chat">🎲 Chat</button>` : '';
     return `<div class="friend-item">
       <div class="friend-avatar">👤</div>
       <div class="friend-info">
@@ -2405,7 +2435,8 @@ async function renderFriendsList() {
         <div class="friend-status ${f.online ? 'online' : ''}">${f.online ? '🟢 Online' : '⚫ Offline'}</div>
       </div>
       <div class="friend-actions">
-        <button class="friend-action-btn msg" onclick="openDM('${escapeHtml(f.username)}')">💬</button>
+        ${connectBtn}
+        <button class="friend-action-btn msg" onclick="closeFriendsList();openDM('${escapeHtml(f.username)}')" title="Send DM">💬 DM</button>
         <button class="friend-action-btn remove" onclick="removeFriend('${escapeHtml(f.username)}')">✕</button>
       </div>
     </div>`;
@@ -2587,7 +2618,7 @@ function renderPendingRequests() {
   const wrapper = document.getElementById('pendingRequestsList');
   const container = document.getElementById('pendingRequestsItems');
   if (!wrapper || !container) return;
-  if (pendingRequests.length === 0) { wrapper.style.display = 'none'; return; }
+  if (pendingRequests.length === 0) { wrapper.style.display = 'none'; updateFriendsBadge(0); return; }
   wrapper.style.display = 'block';
   container.innerHTML = pendingRequests.map(r => `
     <div class="pending-request-item" id="pending-${r.googleId}">
@@ -2598,6 +2629,22 @@ function renderPendingRequests() {
       </div>
     </div>
   `).join('');
+  updateFriendsBadge(pendingRequests.length);
+}
+
+function updateFriendsBadge(count) {
+  ['landingFriendsBtn','dropdownFriendsBtn'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    // Remove old badge
+    btn.querySelector('.friends-req-badge')?.remove();
+    if (count > 0) {
+      const badge = document.createElement('span');
+      badge.className = 'friends-req-badge';
+      badge.textContent = count;
+      btn.appendChild(badge);
+    }
+  });
 }
 
 async function acceptFriendReq(requesterGoogleId, username) {
@@ -2636,12 +2683,13 @@ function showFriendRequestNotification(fromUsername, fromGoogleId) {
   if (!pendingRequests.find(r => r.googleId === fromGoogleId)) {
     pendingRequests.push({ googleId: fromGoogleId, username: fromUsername });
   }
+  renderPendingRequests(); // updates badge too
   // Show toast
   const toast = document.createElement('div');
   toast.className = 'friend-added-toast';
   toast.style.cursor = 'pointer';
-  toast.textContent = `📬 ${fromUsername} wants to be your friend!`;
-  toast.onclick = () => { toast.remove(); openFriendsList(); };
+  toast.textContent = `📬 ${fromUsername} wants to be your friend! Tap to view.`;
+  toast.onclick = () => { toast.remove(); openFriendsList(); setTimeout(() => { document.getElementById('pendingRequestsList')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 300); };
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 7000);
 }
@@ -2654,7 +2702,62 @@ function showFriendAcceptedNotification(username) {
   setTimeout(() => toast.remove(), 4000);
 }
 
-// Load friends on startup
+function showFriendAcceptedNotification(username) {
+  const toast = document.createElement('div');
+  toast.className = 'friend-added-toast';
+  toast.textContent = `✅ ${username} accepted your friend request!`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+// ── Generic Toast Helper ──
+function showToast(text, duration) {
+  const toast = document.createElement('div');
+  toast.className = 'friend-added-toast';
+  toast.textContent = text;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), duration || 4000);
+}
+
+// ── Friend Live Chat Connect ──
+function connectToFriend(targetGoogleId, targetUsername) {
+  if (!myGoogleId) { showToast('Sign in to connect with friends.'); return; }
+  closeFriendsList();
+  if (ws && ws.readyState === 1) {
+    ws.send(JSON.stringify({ type: 'connect_friend', targetGoogleId }));
+    showToast(`📡 Sending chat invite to ${targetUsername}...`, 4000);
+  } else {
+    showToast('❌ Not connected to server.');
+  }
+}
+
+function showFriendConnectModal(fromUsername, fromGoogleId) {
+  // Remove any existing modal
+  document.getElementById('fcModal')?.remove();
+  const overlay = document.createElement('div');
+  overlay.className = 'fc-modal-overlay';
+  overlay.id = 'fcModal';
+  overlay.innerHTML = `
+    <div class="fc-modal">
+      <h4>🎲 Chat Invite</h4>
+      <p><strong>${escapeHtml(fromUsername)}</strong> wants to start a live chat with you!</p>
+      <div class="fc-modal-btns">
+        <button class="fc-modal-btn accept" onclick="respondFriendConnect('${fromGoogleId}', true, this)">✅ Accept</button>
+        <button class="fc-modal-btn decline" onclick="respondFriendConnect('${fromGoogleId}', false, this)">✕ Decline</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  // Auto-dismiss after 30s
+  setTimeout(() => overlay.remove(), 30000);
+}
+
+function respondFriendConnect(fromGoogleId, accepted, btn) {
+  document.getElementById('fcModal')?.remove();
+  if (ws && ws.readyState === 1) {
+    ws.send(JSON.stringify({ type: 'friend_connect_respond', fromGoogleId, accepted }));
+    if (!accepted) showToast('Chat invite declined.');
+  }
+}
 loadFriendsList();
 loadPendingRequests();
 

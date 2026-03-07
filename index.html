@@ -1191,6 +1191,7 @@
     <button class="group-start-btn" id="groupStartBtn" onclick="startGroupCall()">
       🎬 Start Call (need 2+ people)
     </button>
+    <p class="group-waiting-for-host" id="groupWaitingForHost" style="display:none;color:#aaa;font-size:0.9rem;margin:8px 0;">⏳ Waiting for host to start the call...</p>
     <button class="group-leave-btn" onclick="leaveGroupRoom()">Leave Room</button>
   </div>
 </div>
@@ -4163,6 +4164,7 @@ let groupMicOn = true;
 let groupCamOn = true;
 let groupUnread = 0;
 let groupIsInCall = false;
+let groupIsHost = false;
 
 function showGroupLobby() {
   document.getElementById('groupLobbyError').style.display = 'none';
@@ -4234,6 +4236,7 @@ function handleGroupMessage(msg) {
       groupMyId = msg.userId;
       groupRoomCode = msg.roomCode;
       groupMembers = msg.members || [{ id: msg.userId, username: msg.username }];
+      groupIsHost = true;
       showGroupWaitingRoom();
       break;
 
@@ -4241,7 +4244,12 @@ function handleGroupMessage(msg) {
       groupMyId = msg.userId;
       groupRoomCode = msg.roomCode;
       groupMembers = msg.members || [];
+      groupIsHost = false;
       showGroupWaitingRoom();
+      // If host already started the call, auto-join immediately
+      if (msg.callStarted) {
+        setTimeout(() => startGroupCallLocal(), 800);
+      }
       break;
 
     case 'group_error':
@@ -4301,6 +4309,14 @@ function handleGroupMessage(msg) {
       receiveGroupChatMessage(msg);
       break;
 
+    case 'group_call_started':
+      // All members (including host) start the call
+      groupMembers = msg.members || groupMembers;
+      if (!groupIsInCall) {
+        startGroupCallLocal();
+      }
+      break;
+
     case 'ping':
       groupWsSend({ type: 'pong' });
       break;
@@ -4318,13 +4334,22 @@ function updateWaitingRoomUI() {
   const count = groupMembers.length;
   document.getElementById('groupMemberCount').textContent = `${count} of 4 members joined`;
   const startBtn = document.getElementById('groupStartBtn');
-  if (count >= 2) {
-    startBtn.classList.add('ready');
-    startBtn.textContent = `🎬 Start Call (${count} people)`;
+  if (groupIsHost) {
+    startBtn.style.display = '';
+    if (count >= 2) {
+      startBtn.classList.add('ready');
+      startBtn.disabled = false;
+      startBtn.textContent = `🎬 Start Call (${count} people)`;
+    } else {
+      startBtn.classList.remove('ready');
+      startBtn.disabled = false;
+      startBtn.textContent = '🎬 Start Call (need 2+ people)';
+    }
   } else {
-    startBtn.classList.remove('ready');
-    startBtn.textContent = '🎬 Start Call (need 2+ people)';
+    startBtn.style.display = 'none';
   }
+  const waitMsg = document.getElementById('groupWaitingForHost');
+  if (waitMsg) waitMsg.style.display = groupIsHost ? 'none' : '';
 
   // Render member slots
   const list = document.getElementById('groupMembersList');
@@ -4361,9 +4386,23 @@ function addGroupSystemMessage(text) {
 }
 
 // ─── Start Call ───
+// Host presses button → sends group_call_start to server → server broadcasts group_call_started → all call startGroupCallLocal()
 async function startGroupCall() {
+  if (!groupIsHost) return;
   const count = groupMembers.length;
-  if (count < 2) return;
+  if (count < 2) {
+    alert('Need at least 2 people in the room to start the call.');
+    return;
+  }
+  // Disable button to prevent double-click
+  const btn = document.getElementById('groupStartBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '🔄 Starting...'; }
+  // Tell server to start the call (broadcasts to all members)
+  groupWsSend({ type: 'group_call_start' });
+}
+
+async function startGroupCallLocal() {
+  if (groupIsInCall) return;
 
   // Get media
   try {
@@ -4388,7 +4427,7 @@ async function startGroupCall() {
   // Build initial video grid
   buildGroupVideoGrid();
 
-  // Initiate peer connections with all existing members
+  // Initiate peer connections with all existing members (only the "higher" id initiates to avoid duplicate offers)
   for (const member of groupMembers) {
     if (member.id !== groupMyId) {
       initiateGroupPeer(member.id, member.username);
@@ -4656,6 +4695,7 @@ function leaveGroupAndGoHome() {
 
 function cleanupGroup() {
   groupIsInCall = false;
+  groupIsHost = false;
   // Close all peer connections
   for (const id of Object.keys(groupPeers)) {
     groupPeers[id].pc.close();
